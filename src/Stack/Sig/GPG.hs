@@ -98,7 +98,7 @@ verifyFile' signaturePath filePath =
                              ["--verify",signaturePath,filePath]
                              [])
 
-verifyFileWithProcess :: forall (m :: * -> *) p.
+verifyFileWithProcess :: forall (m :: * -> *).
                          (Monad m,MonadIO m,MonadThrow m)
                       => IO (ExitCode,String,String) -> m FingerprintSample
 verifyFileWithProcess process =
