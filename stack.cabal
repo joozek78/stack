@@ -97,6 +97,23 @@ library
                      Data.Binary.VersionTagged
                      Data.Set.Monad
                      Data.Maybe.Extra
+                     Sig.Archive
+                     Sig.Cabal
+                     Sig.Cabal.Parse
+                     Sig.Check
+                     Sig.Config
+                     Sig.Defaults
+                     Sig.Doc
+                     Sig.GPG
+                     Sig.Hackage
+                     Sig.Init
+                     Sig.Install
+                     Sig.List
+                     Sig.Mapping
+                     Sig.Sign
+                     Sig.Trust
+                     Sig.Types
+                     Sig.Update
   build-depends:     Cabal >= 1.18.1.5
                    , aeson >= 0.8.0.2
                    , async >= 2.0.2
@@ -168,6 +185,10 @@ library
                    , word8
                    , hastache
                    , project-template >= 0.2
+                   , ansi-wl-pprint
+                   , base-prelude
+                   , email-validate >=2.0
+                   , uuid
   if !os(windows)
     build-depends:   unix >= 2.7.0.1
   default-language:    Haskell2010
