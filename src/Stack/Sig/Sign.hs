@@ -5,8 +5,8 @@
 {-# LANGUAGE RankNTypes #-}
 
 {-|
-Module      : Sig.Sign
-Description : Haskell Package Signing Tool: Signing Packages
+Module      : Stack.Sig.Sign
+Description : Signing Packages
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -14,7 +14,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Sign (sign, signAll) where
+module Stack.Sig.Sign (sign, signAll) where
 
 import BasePrelude
 import Control.Monad.Catch ( MonadThrow )
@@ -34,15 +34,15 @@ import Network.HTTP.Conduit
       httpLbs,
       parseUrl )
 import Network.HTTP.Types ( status200, methodPut )
-import Sig.Cabal
+import Stack.Sig.Cabal
     ( cabalFetch,
       cabalFilePackageId,
       packagesFromIndex,
       getPackageTarballPath )
-import Sig.Doc ( putHeader, putPkgOK )
-import qualified Sig.GPG as GPG ( fullFingerprint, sign, verifyFile )
-import Sig.Hackage ( packagesForMaintainer )
-import Sig.Types
+import Stack.Sig.Doc ( putHeader, putPkgOK )
+import qualified Stack.Sig.GPG as GPG ( fullFingerprint, sign, verifyFile )
+import Stack.Sig.Hackage ( packagesForMaintainer )
+import Stack.Sig.Types
     ( SigException(GPGSignException),
       FingerprintSample(fingerprintSample),
       Signature(Signature) )

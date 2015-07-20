@@ -7,8 +7,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {-|
-Module      : Sig.Doc
-Description : Haskell Package Signing Tool: Pretty Printing Functions
+Module      : Stack.Sig.Doc
+Description : Pretty Printing Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -16,7 +16,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Doc
+module Stack.Sig.Doc
        (ToDoc(..), putToDoc, putHeader, putPkgOK)
        where
 
@@ -38,7 +38,7 @@ import qualified Data.Text as T ( unpack )
 import Distribution.Package
     ( PackageName, PackageIdentifier(pkgName, pkgVersion) )
 import Distribution.Text ( display )
-import Sig.Types
+import Stack.Sig.Types
     ( Config(..),
       FingerprintSample(FingerprintSample),
       Signer(..),

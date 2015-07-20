@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-|
-Module      : Sig.Trust
-Description : Haskell Package Signing Tool: Trusting Mappings by Key
+Module      : Stack.Sig.Trust
+Description : Trusting Mappings
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -10,12 +10,12 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Trust where
+module Stack.Sig.Trust where
 
 import BasePrelude
-import Sig.Config
-import Sig.GPG
-import Sig.Types
+import Stack.Sig.Config
+import Stack.Sig.GPG
+import Stack.Sig.Types
 import Text.Email.Validate (validate)
 
 trust :: String -> String -> IO ()

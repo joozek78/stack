@@ -2,11 +2,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Sig.Config where
+module Stack.Sig.Config where
 
 {-|
-Module      : Sig.Config
-Description : Haskell Package Signing Tool: Config File Functions
+Module      : Stack.Sig.Config
+Description : Config File Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -16,8 +16,8 @@ Portability : POSIX
 
 import BasePrelude
 import Data.Time ( formatTime, getCurrentTime )
-import Sig.Defaults ( configDir, configFile )
-import Sig.Types
+import Stack.Sig.Defaults ( configDir, configFile )
+import Stack.Sig.Types
     ( SigException(ConfigParseException), Config(..), Signer(..) )
 import System.Directory
     ( renameFile,

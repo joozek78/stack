@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-|
-Module      : Sig.Install
+Module      : Stack.Sig.Install
 Description : Haskell Package Signing Tool: Installing with Cabal
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
@@ -10,12 +10,12 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Install where
+module Stack.Sig.Install where
 
 import BasePrelude
-import Sig.Cabal ( cabalInstall )
-import Sig.Check ( check )
-import Sig.Doc ( putHeader )
+import Stack.Sig.Cabal ( cabalInstall )
+import Stack.Sig.Check ( check )
+import Stack.Sig.Doc ( putHeader )
 
 install :: [String] -> String -> IO ()
 install extraArgs pkg =

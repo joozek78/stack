@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : Sig.Check
-Description : Haskell Package Signing Tool: Check Package Signature(s)
+Module      : Stack.Sig.Check
+Description : Check Package Signature(s)
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -11,20 +11,20 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Check where
+module Stack.Sig.Check where
 
 import BasePrelude
 import Distribution.Package
     ( PackageName(PackageName),
       PackageIdentifier(pkgName),
       packageVersion )
-import Sig.Archive ( readArchive )
-import Sig.Cabal ( cabalInstallDryRun, cabalFetch )
-import Sig.Config ( readConfig )
-import Sig.Defaults ( configDir, archiveDir )
-import Sig.Doc ( putHeader, putPkgOK )
-import Sig.GPG ( verifyPackage, verifyMappings )
-import Sig.Types ( Archive(archiveMappings) )
+import Stack.Sig.Archive ( readArchive )
+import Stack.Sig.Cabal ( cabalInstallDryRun, cabalFetch )
+import Stack.Sig.Config ( readConfig )
+import Stack.Sig.Defaults ( configDir, archiveDir )
+import Stack.Sig.Doc ( putHeader, putPkgOK )
+import Stack.Sig.GPG ( verifyPackage, verifyMappings )
+import Stack.Sig.Types ( Archive(archiveMappings) )
 import System.Directory ( getHomeDirectory )
 import System.FilePath ( (</>) )
 

@@ -97,23 +97,23 @@ library
                      Data.Binary.VersionTagged
                      Data.Set.Monad
                      Data.Maybe.Extra
-                     Sig.Archive
-                     Sig.Cabal
-                     Sig.Cabal.Parse
-                     Sig.Check
-                     Sig.Config
-                     Sig.Defaults
-                     Sig.Doc
-                     Sig.GPG
-                     Sig.Hackage
-                     Sig.Init
-                     Sig.Install
-                     Sig.List
-                     Sig.Mapping
-                     Sig.Sign
-                     Sig.Trust
-                     Sig.Types
-                     Sig.Update
+                     Stack.Sig.Archive
+                     Stack.Sig.Cabal
+                     Stack.Sig.Cabal.Parse
+                     Stack.Sig.Check
+                     Stack.Sig.Config
+                     Stack.Sig.Defaults
+                     Stack.Sig.Doc
+                     Stack.Sig.GPG
+                     Stack.Sig.Hackage
+                     Stack.Sig.Init
+                     Stack.Sig.Install
+                     Stack.Sig.List
+                     Stack.Sig.Mapping
+                     Stack.Sig.Sign
+                     Stack.Sig.Trust
+                     Stack.Sig.Types
+                     Stack.Sig.Update
   build-depends:     Cabal >= 1.18.1.5
                    , aeson >= 0.8.0.2
                    , async >= 2.0.2

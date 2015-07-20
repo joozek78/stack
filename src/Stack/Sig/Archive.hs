@@ -3,8 +3,8 @@
 {-# LANGUAGE TupleSections #-}
 
 {-|
-Module      : Sig.Archive
-Description : Haskell Package Signing Tool: Archive Functions
+Module      : Stack.Sig.Archive
+Description : Package Archive Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -12,7 +12,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Archive where
+module Stack.Sig.Archive where
 
 import BasePrelude hiding (parseVersion)
 import qualified Data.ByteString as S ( readFile )
@@ -25,10 +25,10 @@ import qualified Data.Set as S ( fromList )
 import qualified Data.Text as T ( stripSuffix, pack )
 import Distribution.Package
     ( PackageIdentifier(PackageIdentifier) )
-import Sig.Cabal.Parse ( parsePackageName, parseVersion )
-import Sig.Defaults ( mappingsDir, signaturesDir )
-import Sig.Mapping ( readMapping )
-import Sig.Types ( Signature(..), Archive(..) )
+import Stack.Sig.Cabal.Parse ( parsePackageName, parseVersion )
+import Stack.Sig.Defaults ( mappingsDir, signaturesDir )
+import Stack.Sig.Mapping ( readMapping )
+import Stack.Sig.Types ( Signature(..), Archive(..) )
 import System.Directory.Parse ( parseDirectory, filterDirectory )
 import System.FilePath ( splitFileName, splitExtension, (</>) )
 

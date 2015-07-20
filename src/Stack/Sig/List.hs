@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-|
-Module      : Sig.List
-Description : Haskell Package Signing Tool: List Mappings
+Module      : Stack.Sig.List
+Description : List Mappings
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -10,15 +10,15 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.List where
+module Stack.Sig.List where
 
 import BasePrelude
-import Sig.Archive ( readArchive )
-import Sig.Config ( readConfig )
-import Sig.Defaults ( configDir, archiveDir )
-import Sig.Doc ( putToDoc )
-import Sig.GPG ( verifyMappings )
-import Sig.Types ( Archive(archiveMappings) )
+import Stack.Sig.Archive ( readArchive )
+import Stack.Sig.Config ( readConfig )
+import Stack.Sig.Defaults ( configDir, archiveDir )
+import Stack.Sig.Doc ( putToDoc )
+import Stack.Sig.GPG ( verifyMappings )
+import Stack.Sig.Types ( Archive(archiveMappings) )
 import System.Directory ( getHomeDirectory )
 import System.FilePath ( (</>) )
 

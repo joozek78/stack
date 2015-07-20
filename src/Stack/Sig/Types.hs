@@ -5,8 +5,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {-|
-Module      : Sig.Types
-Description : Haskell Package Signing Tool: Types
+Module      : Stack.Sig.Types
+Description : Signature Types
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -14,7 +14,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Types
+module Stack.Sig.Types
   (Archive(..)
   ,Signature(..)
   ,Mapping(..)
@@ -39,7 +39,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable)
 import           Distribution.Package (PackageName, PackageIdentifier)
-import           Sig.Cabal.Parse (parsePackageName)
+import           Stack.Sig.Cabal.Parse (parsePackageName)
 import           Text.Email.Validate (EmailAddress, validate, toByteString)
 
 -- | A signature archive.

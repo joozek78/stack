@@ -5,8 +5,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
 {-|
-Module      : Sig.Cabal
-Description : Haskell Package Signing Tool: Cabal Functions
+Module      : Stack.Sig.Cabal
+Description : Cabal Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -14,7 +14,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Cabal where
+module Stack.Sig.Cabal where
 
 import BasePrelude
 import qualified Codec.Archive.Tar as Tar
@@ -50,7 +50,7 @@ import Distribution.PackageDescription.Parse
     ( readPackageDescription )
 import Distribution.Text ( Text(disp), simpleParse )
 import Distribution.Verbosity ( silent )
-import Sig.Types
+import Stack.Sig.Types
     ( SigException(CabalFetchException, CabalInstallException,
                    CabalIndexException, CabalPackageListException) )
 import System.Directory ( doesFileExist, getAppUserDataDirectory )

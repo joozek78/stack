@@ -2,8 +2,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-|
-Module      : Sig.Update
-Description : Haskell Package Signing Tool: Update Mappings & Signatures
+Module      : Stack.Sig.Update
+Description : Update Mappings & Signatures
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -11,7 +11,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Update where
+module Stack.Sig.Update where
 
 import BasePrelude
 import qualified Data.Conduit as C ( ($$+-) )
@@ -19,8 +19,8 @@ import Data.Conduit.Binary ( sinkFile )
 import Data.Time ( formatTime, getCurrentTime )
 import Network.HTTP.Conduit
     ( Response(responseBody), withManager, http, parseUrl )
-import Sig.Defaults ( configDir, archiveDir )
-import Sig.Types ( SigException(ArchiveUpdateException, SigServiceException) )
+import Stack.Sig.Defaults ( configDir, archiveDir )
+import Stack.Sig.Types ( SigException(ArchiveUpdateException, SigServiceException) )
 import System.Directory
     ( renameDirectory,
       getTemporaryDirectory,

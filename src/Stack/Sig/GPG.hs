@@ -4,8 +4,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {-|
-Module      : Sig.GPG
-Description : Haskell Package Signing Tool: GPG Packages
+Module      : Stack.Sig.GPG
+Description : GPG Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -13,7 +13,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.GPG where
+module Stack.Sig.GPG where
 
 import           BasePrelude
 import           Control.Monad.Catch (MonadThrow, throwM)
@@ -25,8 +25,8 @@ import qualified Data.Set as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Distribution.Package (PackageName(..), PackageIdentifier(..), packageName)
-import           Sig.Defaults
-import           Sig.Types
+import           Stack.Sig.Defaults
+import           Stack.Sig.Types
 import           System.Directory (doesFileExist)
 import           System.FilePath ((</>))
 import           System.Process (readProcessWithExitCode)

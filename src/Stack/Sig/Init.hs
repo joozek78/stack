@@ -1,6 +1,6 @@
 {-|
-Module      : Sig.Init
-Description : Haskell Package Signing Tool: Initialize
+Module      : Stack.Sig.Init
+Description : Initialize with Default Config & Clone Sig-Archive
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -8,10 +8,10 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Init where
+module Stack.Sig.Init where
 
-import Sig.Config ( defaultConfig, writeConfigIfMissing )
-import Sig.Update ( update )
+import Stack.Sig.Config ( defaultConfig, writeConfigIfMissing )
+import Stack.Sig.Update ( update )
 
 initialize :: String -> IO ()
 initialize url =

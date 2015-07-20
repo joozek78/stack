@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-|
-Module      : Sig.Mapping
-Description : Haskell Package Signing Tool: Signer Mapping Functions
+Module      : Stack.Sig.Mapping
+Description : Signer Mapping Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -10,11 +10,11 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Mapping where
+module Stack.Sig.Mapping where
 
 import BasePrelude
 import qualified Data.ByteString as S ( readFile )
-import Sig.Types ( SigException(MappingParseException), Mapping )
+import Stack.Sig.Types ( SigException(MappingParseException), Mapping )
 import Data.Yaml ( decodeEither )
 
 -- | Try to read a mapping from the file. Throws an exception if it

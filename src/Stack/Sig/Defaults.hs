@@ -1,6 +1,6 @@
 {-|
 Module      : Sig.Defaults
-Description : Haskell Package Signing Tool: Defaults
+Description : Signing Defaults
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -8,7 +8,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Defaults where
+module Stack.Sig.Defaults where
 
 -- | Place for the sig config
 configDir :: FilePath

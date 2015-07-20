@@ -1,6 +1,6 @@
 {-|
-Module      : Sig.Cabal.Parse
-Description : Haskell Package Signing Tool: PackageIdentifier Parsing Functions
+Module      : Stack.Sig.Cabal.Parse
+Description : PackageIdentifier Parsing Functions
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
 Maintainer  : Tim Dysinger <tim@fpcomplete.com>
@@ -8,7 +8,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Sig.Cabal.Parse where
+module Stack.Sig.Cabal.Parse where
 
 import Data.Version ( Version )
 import qualified Data.Version as V ( parseVersion )

@@ -5,7 +5,17 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Sig.Hackage where
+{-|
+Module      : Stack.Sig.Hackage
+Description : Call Hackage APIs for User/Package Data
+Copyright   : (c) FPComplete.com, 2015
+License     : BSD3
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
+module Stack.Sig.Hackage where
 
 import BasePrelude
 import Control.Monad.Catch ( MonadThrow, throwM )
@@ -18,7 +28,7 @@ import Distribution.Package ( PackageIdentifier )
 import Distribution.Text ( simpleParse )
 import Network.HTTP.Conduit
     ( parseUrl, withManager, httpLbs, requestHeaders, responseBody )
-import Sig.Types ( SigException(HackageAPIException) )
+import Stack.Sig.Types ( SigException(HackageAPIException) )
 
 data UserDetail =
   UserDetail {groups :: [String]
