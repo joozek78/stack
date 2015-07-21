@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
@@ -13,20 +12,21 @@ Portability : POSIX
 
 module Stack.Sig.Check where
 
-import BasePrelude
+import Data.Foldable (forM_)
+import Data.List (intercalate)
+import Data.Monoid ((<>))
+import Data.Version (Version(..))
 import Distribution.Package
-    ( PackageName(PackageName),
-      PackageIdentifier(pkgName),
-      packageVersion )
-import Stack.Sig.Archive ( readArchive )
-import Stack.Sig.Cabal ( cabalInstallDryRun, cabalFetch )
-import Stack.Sig.Config ( readConfig )
-import Stack.Sig.Defaults ( configDir, archiveDir )
-import Stack.Sig.Doc ( putHeader, putPkgOK )
-import Stack.Sig.GPG ( verifyPackage, verifyMappings )
-import Stack.Sig.Types ( Archive(archiveMappings) )
-import System.Directory ( getHomeDirectory )
-import System.FilePath ( (</>) )
+       (PackageName(..), PackageIdentifier(..), packageVersion)
+import Stack.Sig.Archive (readArchive)
+import Stack.Sig.Cabal (cabalInstallDryRun, cabalFetch)
+import Stack.Sig.Config (readConfig)
+import Stack.Sig.Defaults (configDir, archiveDir)
+import Stack.Sig.Doc (putHeader, putPkgOK)
+import Stack.Sig.GPG (verifyPackage, verifyMappings)
+import Stack.Sig.Types (Archive(..))
+import System.Directory (getHomeDirectory)
+import System.FilePath ((</>))
 
 check :: [String] -> String -> IO ()
 check extraArgs pkg =

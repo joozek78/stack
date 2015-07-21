@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-|
 Module      : Stack.Sig.Mapping
 Description : Signer Mapping Functions
@@ -12,10 +10,11 @@ Portability : POSIX
 
 module Stack.Sig.Mapping where
 
-import BasePrelude
-import qualified Data.ByteString as S ( readFile )
-import Stack.Sig.Types ( SigException(MappingParseException), Mapping )
-import Data.Yaml ( decodeEither )
+import           Control.Exception (throwIO)
+import qualified Data.ByteString as S
+import           Data.Monoid ((<>))
+import           Data.Yaml (decodeEither)
+import           Stack.Sig.Types (SigException(..), Mapping)
 
 -- | Try to read a mapping from the file. Throws an exception if it
 -- fails.

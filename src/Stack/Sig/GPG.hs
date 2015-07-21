@@ -1,5 +1,4 @@
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -15,19 +14,23 @@ Portability : POSIX
 
 module Stack.Sig.GPG where
 
-import           BasePrelude
+import           Control.Monad (unless)
 import           Control.Monad.Catch (MonadThrow, throwM)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.ByteString.Char8 as C
+import           Data.Foldable (forM_)
+import           Data.List (find)
 import           Data.Map (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Distribution.Package (PackageName(..), PackageIdentifier(..), packageName)
+import           Distribution.Package (PackageName(..), PackageIdentifier(..),
+                                       packageName)
 import           Stack.Sig.Defaults
 import           Stack.Sig.Types
 import           System.Directory (doesFileExist)
+import           System.Exit (ExitCode(..))
 import           System.FilePath ((</>))
 import           System.Process (readProcessWithExitCode)
 
@@ -39,7 +42,7 @@ sign path =
        liftIO (readProcessWithExitCode
                  "gpg"
                  ["--output","-","--use-agent","--detach-sig","--armor",path]
-                 mempty)
+                 [])
      if code /= ExitSuccess
         then throwM (GPGSignException (out ++ "\n" ++ err))
         else return (Signature (C.pack out))

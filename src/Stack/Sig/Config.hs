@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Stack.Sig.Config where
@@ -14,25 +13,26 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-import BasePrelude
-import Data.Time ( formatTime, getCurrentTime )
-import Stack.Sig.Defaults ( configDir, configFile )
-import Stack.Sig.Types
-    ( SigException(ConfigParseException), Config(..), Signer(..) )
-import System.Directory
-    ( renameFile,
-      getHomeDirectory,
-      doesFileExist,
-      createDirectoryIfMissing )
-import System.FilePath ( (</>) )
-import qualified Data.ByteString as B ( writeFile, readFile )
-import qualified Data.Yaml as Y ( encode, decodeEither )
-import Text.Email.Validate ( emailAddress )
+import           Control.Applicative ((<$>))
+import           Control.Exception (throwIO)
+import           Control.Monad (when)
+import qualified Data.ByteString as B
+import           Data.Maybe (fromJust)
+import           Data.Monoid ((<>))
+import qualified Data.Set as Set
+import           Data.Time ( formatTime, getCurrentTime )
+import qualified Data.Yaml as Y
+import           Stack.Sig.Defaults
+import           Stack.Sig.Types (SigException(..), Config(..), Signer(..))
+import           System.Directory (renameFile, getHomeDirectory, doesFileExist,
+                                   createDirectoryIfMissing)
+import           System.FilePath ( (</>) )
+import           Text.Email.Validate ( emailAddress )
 
 #if MIN_VERSION_time(1,5,0)
-import Data.Time ( defaultTimeLocale )
+import           Data.Time (defaultTimeLocale)
 #else
-import System.Locale ( defaultTimeLocale )
+import           System.Locale (defaultTimeLocale)
 #endif
 
 defaultSigners :: [Signer]
@@ -42,8 +42,8 @@ defaultSigners =
              fromJust (emailAddress "chrisdone@gmail.com")}
   ,Signer {signerFingerprint = "5E6C 66B2 78BD B10A A636  57FA A048 E8C0 57E8 6876"
           ,signerEmail =
-             fromJust (emailAddress "michael@snoyman.com")},
-  Signer {signerFingerprint = "8C69 4F5B 6941 3F16 736F  E055 A9E6 D147 44A5 2A60"
+             fromJust (emailAddress "michael@snoyman.com")}
+  ,Signer {signerFingerprint = "8C69 4F5B 6941 3F16 736F  E055 A9E6 D147 44A5 2A60"
           ,signerEmail =
              fromJust (emailAddress "tim@dysinger.net")}]
 
@@ -76,7 +76,12 @@ writeConfig cfg =
      B.writeFile
        configPath
        (Y.encode cfg {configTrustedMappingSigners =
-                        nub (defaultSigners ++ configTrustedMappingSigners cfg)})
+                        ordNub (defaultSigners ++ configTrustedMappingSigners cfg)})
+  where
+    ordNub l = go Set.empty l
+    go _ [] = []
+    go s (x:xs) = if x `Set.member` s then go s xs
+                                      else x : go (Set.insert x s) xs
 
 writeConfigIfMissing :: Config -> IO ()
 writeConfigIfMissing cfg =

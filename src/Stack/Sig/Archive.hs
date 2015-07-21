@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -14,23 +13,23 @@ Portability : POSIX
 
 module Stack.Sig.Archive where
 
-import BasePrelude hiding (parseVersion)
-import qualified Data.ByteString as S ( readFile )
-import Data.List.Split ( splitOn )
-import Data.Map.Strict ( Map )
+import           Control.Arrow (second)
+import           Control.Monad (forM)
+import qualified Data.ByteString as S
+import           Data.List.Split (splitOn)
+import           Data.List (isSuffixOf)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-    ( insert, fromList, empty, elems )
-import Data.Set ( Set )
-import qualified Data.Set as S ( fromList )
-import qualified Data.Text as T ( stripSuffix, pack )
-import Distribution.Package
-    ( PackageIdentifier(PackageIdentifier) )
-import Stack.Sig.Cabal.Parse ( parsePackageName, parseVersion )
-import Stack.Sig.Defaults ( mappingsDir, signaturesDir )
-import Stack.Sig.Mapping ( readMapping )
-import Stack.Sig.Types ( Signature(..), Archive(..) )
-import System.Directory.Parse ( parseDirectory, filterDirectory )
-import System.FilePath ( splitFileName, splitExtension, (</>) )
+import           Data.Set (Set)
+import qualified Data.Set as S
+import qualified Data.Text as T
+import           Distribution.Package (PackageIdentifier(..))
+import           Stack.Sig.Cabal.Parse
+import           Stack.Sig.Defaults
+import           Stack.Sig.Mapping
+import           Stack.Sig.Types
+import           System.Directory.Parse (parseDirectory, filterDirectory)
+import           System.FilePath (splitFileName, splitExtension, (</>))
 
 -- | Read an archive from a directory.
 readArchive :: FilePath -> IO Archive

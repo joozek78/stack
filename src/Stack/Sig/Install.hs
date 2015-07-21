@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-|
 Module      : Stack.Sig.Install
 Description : Haskell Package Signing Tool: Installing with Cabal
@@ -12,10 +10,9 @@ Portability : POSIX
 
 module Stack.Sig.Install where
 
-import BasePrelude
-import Stack.Sig.Cabal ( cabalInstall )
-import Stack.Sig.Check ( check )
-import Stack.Sig.Doc ( putHeader )
+import Stack.Sig.Cabal
+import Stack.Sig.Check
+import Stack.Sig.Doc
 
 install :: [String] -> String -> IO ()
 install extraArgs pkg =

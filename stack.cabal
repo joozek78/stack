@@ -186,7 +186,6 @@ library
                    , hastache
                    , project-template >= 0.2
                    , ansi-wl-pprint
-                   , base-prelude
                    , email-validate >=2.0
                    , uuid
   if !os(windows)

@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -17,18 +16,20 @@ Portability : POSIX
 
 module Stack.Sig.Hackage where
 
-import BasePrelude
-import Control.Monad.Catch ( MonadThrow, throwM )
-import Control.Monad.IO.Class ( MonadIO )
-import Control.Monad.Trans.Control ( MonadBaseControl )
-import Data.Aeson ( eitherDecode )
-import Data.Aeson.TH ( deriveFromJSON, defaultOptions )
-import Data.List.Split ( splitOn )
-import Distribution.Package ( PackageIdentifier )
-import Distribution.Text ( simpleParse )
+import Control.Applicative ((<$>))
+import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Aeson (eitherDecode)
+import Data.Aeson.TH (deriveFromJSON, defaultOptions)
+import Data.List.Split (splitOn)
+import Data.Maybe
+import Data.Monoid ((<>))
+import Distribution.Package (PackageIdentifier)
+import Distribution.Text (simpleParse)
 import Network.HTTP.Conduit
-    ( parseUrl, withManager, httpLbs, requestHeaders, responseBody )
-import Stack.Sig.Types ( SigException(HackageAPIException) )
+       (parseUrl, withManager, httpLbs, requestHeaders, responseBody)
+import Stack.Sig.Types (SigException(HackageAPIException))
 
 data UserDetail =
   UserDetail {groups :: [String]

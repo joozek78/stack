@@ -1,5 +1,4 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
 
 {-|
 Module      : Stack.Sig.Update
@@ -13,26 +12,28 @@ Portability : POSIX
 
 module Stack.Sig.Update where
 
-import BasePrelude
-import qualified Data.Conduit as C ( ($$+-) )
-import Data.Conduit.Binary ( sinkFile )
-import Data.Time ( formatTime, getCurrentTime )
-import Network.HTTP.Conduit
-    ( Response(responseBody), withManager, http, parseUrl )
-import Stack.Sig.Defaults ( configDir, archiveDir )
-import Stack.Sig.Types ( SigException(ArchiveUpdateException, SigServiceException) )
-import System.Directory
-    ( renameDirectory,
-      getTemporaryDirectory,
-      getHomeDirectory,
-      doesDirectoryExist )
-import System.FilePath ( (</>) )
-import System.Process ( readProcessWithExitCode )
+import           Control.Exception (catch, throwIO, SomeException)
+import           Control.Monad (when, unless)
+import qualified Data.Conduit as C (($$+-))
+import           Data.Conduit.Binary (sinkFile)
+import           Data.Monoid ((<>))
+import           Data.Time (formatTime, getCurrentTime)
+import           Network.HTTP.Conduit (Response(responseBody),
+                                       withManager, http, parseUrl)
+import           Stack.Sig.Defaults (configDir, archiveDir)
+import           Stack.Sig.Types
+import           System.Directory (renameDirectory,
+                                   getTemporaryDirectory,
+                                   getHomeDirectory,
+                                   doesDirectoryExist)
+import           System.Exit (ExitCode(..))
+import           System.FilePath ((</>))
+import           System.Process (readProcessWithExitCode)
 
 #if MIN_VERSION_time(1,5,0)
-import Data.Time ( defaultTimeLocale )
+import           Data.Time (defaultTimeLocale)
 #else
-import System.Locale ( defaultTimeLocale )
+import           System.Locale (defaultTimeLocale)
 #endif
 
 update :: String -> IO ()
@@ -62,6 +63,6 @@ update url =
      (code,_out,err) <-
        readProcessWithExitCode "tar"
                                ["xf",tempFile,"-C",configPath]
-                               mempty
+                               []
      unless (code == ExitSuccess)
             (throwIO (ArchiveUpdateException err))

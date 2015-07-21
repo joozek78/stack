@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -16,47 +15,34 @@ Portability : POSIX
 
 module Stack.Sig.Cabal where
 
-import BasePrelude
 import qualified Codec.Archive.Tar as Tar
-    ( EntryContent(NormalFile),
-      Entry(entryContent),
-      Entries(Done, Fail, Next),
-      entryPath,
-      read )
-import Conduit
-    ( MonadIO(..),
-      MonadThrow(..),
-      MonadBaseControl,
-      (=$),
-      ($$),
-      runResourceT,
-      sourceFile,
-      sinkList,
-      linesUnboundedC,
-      decodeUtf8C,
-      concatMapC )
-import qualified Data.ByteString.Lazy as BL ( readFile )
-import Data.List.Split ( splitOn )
-import qualified Data.Text as T ( unpack )
-import Distribution.Package
-    ( PackageName(PackageName),
-      PackageIdentifier(PackageIdentifier),
-      pkgName,
-      pkgVersion )
-import Distribution.PackageDescription
-    ( PackageDescription(package),
-      GenericPackageDescription(packageDescription) )
-import Distribution.PackageDescription.Parse
-    ( readPackageDescription )
-import Distribution.Text ( Text(disp), simpleParse )
-import Distribution.Verbosity ( silent )
-import Stack.Sig.Types
-    ( SigException(CabalFetchException, CabalInstallException,
-                   CabalIndexException, CabalPackageListException) )
-import System.Directory ( doesFileExist, getAppUserDataDirectory )
-import System.FilePath ( (</>) )
-import System.Process
-    ( waitForProcess, spawnProcess, readProcessWithExitCode )
+import           Conduit (MonadIO(..), MonadThrow(..), MonadBaseControl,
+                          (=$), ($$), runResourceT, sourceFile, sinkList,
+                          linesUnboundedC, decodeUtf8C, concatMapC)
+import           Control.Applicative (pure)
+import           Control.Exception (throwIO)
+import           Control.Monad (unless)
+import qualified Data.ByteString.Lazy as BL
+import           Data.List (intercalate, stripPrefix, isSuffixOf)
+import           Data.List.Split (splitOn)
+import           Data.Maybe (catMaybes)
+import           Data.Monoid ((<>))
+import           Data.String (fromString)
+import qualified Data.Text as T
+import           Data.Version (Version(..))
+import           Distribution.Package  (PackageName(..), PackageIdentifier(..),
+                                        pkgName, pkgVersion)
+import           Distribution.PackageDescription (PackageDescription(..),
+                                                  GenericPackageDescription(..))
+import           Distribution.PackageDescription.Parse (readPackageDescription)
+import           Distribution.Text (Text(disp), simpleParse)
+import           Distribution.Verbosity (silent)
+import           Stack.Sig.Types
+import           System.Directory (doesFileExist, getAppUserDataDirectory)
+import           System.Exit (ExitCode(..))
+import           System.FilePath ((</>))
+import           System.Process (waitForProcess, spawnProcess,
+                                 readProcessWithExitCode)
 
 cabalInstallDryRun :: [String]
                    -> String
@@ -68,12 +54,12 @@ cabalInstallDryRun opts pkg =
          (["install","--dry-run","--package-db=clear","--package-db=global"] ++
           opts ++
           [pkg])
-         mempty
+         []
      if code /= ExitSuccess
         then throwIO (CabalPackageListException err)
         else return (if (last . lines $ out) ==
                         "Use --reinstall if you want to reinstall anyway."
-                        then empty
+                        then []
                         else stdoutToPackageIdentifiers out)
   where stdoutToPackageIdentifiers :: String -> [PackageIdentifier]
         stdoutToPackageIdentifiers =
@@ -107,7 +93,7 @@ cabalFetch opts (PackageIdentifier (PackageName name) (Version branch _tags)) =
          (["fetch"] ++
           opts ++
           [pkg])
-         mempty
+         []
      unless (code == ExitSuccess)
             (throwIO (CabalFetchException err))
 

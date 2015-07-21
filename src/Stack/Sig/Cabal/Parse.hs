@@ -10,13 +10,12 @@ Portability : POSIX
 
 module Stack.Sig.Cabal.Parse where
 
-import Data.Version ( Version )
-import qualified Data.Version as V ( parseVersion )
-import qualified Distribution.Compat.ReadP as Compat ( readP_to_S )
-import Distribution.Package ( PackageName )
-import Distribution.ParseUtils ( parsePackageNameQ )
+import           Data.Version (Version)
+import qualified Data.Version as V
+import qualified Distribution.Compat.ReadP as Compat
+import           Distribution.Package (PackageName)
+import           Distribution.ParseUtils (parsePackageNameQ)
 import qualified Text.ParserCombinators.ReadP as ReadP
-    ( readP_to_S )
 
 -- | Parse a package name.
 parsePackageName :: String -> Maybe PackageName

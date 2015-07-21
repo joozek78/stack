@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -16,42 +15,36 @@ Portability : POSIX
 
 module Stack.Sig.Sign (sign, signAll) where
 
-import BasePrelude
-import Control.Monad.Catch ( MonadThrow )
-import Control.Monad.IO.Class ( MonadIO, liftIO )
-import Control.Monad.Trans.Control ( MonadBaseControl )
-import qualified Data.Text as T ( unpack )
-import Data.UUID ( toString )
-import Data.UUID.V4 ( nextRandom )
-import Distribution.Package
-    ( PackageName(PackageName),
-      PackageIdentifier(pkgName, pkgVersion) )
-import Network.HTTP.Conduit
-    ( Response(responseStatus),
-      RequestBody(RequestBodyBS),
-      Request(method, requestBody),
-      withManager,
-      httpLbs,
-      parseUrl )
-import Network.HTTP.Types ( status200, methodPut )
-import Stack.Sig.Cabal
-    ( cabalFetch,
-      cabalFilePackageId,
-      packagesFromIndex,
-      getPackageTarballPath )
-import Stack.Sig.Doc ( putHeader, putPkgOK )
-import qualified Stack.Sig.GPG as GPG ( fullFingerprint, sign, verifyFile )
-import Stack.Sig.Hackage ( packagesForMaintainer )
-import Stack.Sig.Types
-    ( SigException(GPGSignException),
-      FingerprintSample(fingerprintSample),
-      Signature(Signature) )
-import System.Directory
-    ( getTemporaryDirectory,
-      getDirectoryContents,
-      createDirectoryIfMissing )
-import System.FilePath ( (</>) )
-import System.Process ( readProcessWithExitCode )
+import           Control.Monad.Catch (MonadThrow)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Trans.Control (MonadBaseControl)
+import           Control.Applicative ((<$>))
+import           Data.Foldable (forM_)
+import           Data.Monoid ((<>))
+import           Control.Exception (throwIO)
+import           Control.Monad (when)
+import           Data.Version (showVersion)
+import qualified Data.Text as T
+import           Data.UUID (toString)
+import           Data.List (isSuffixOf)
+import           Data.UUID.V4 (nextRandom)
+import           Distribution.Package (PackageName(PackageName),
+                                       PackageIdentifier(..))
+import           Network.HTTP.Conduit (Response(..), RequestBody(..),
+                                       Request(..), withManager,
+                                       httpLbs, parseUrl)
+import           Network.HTTP.Types (status200, methodPut)
+import           Stack.Sig.Cabal (cabalFetch, cabalFilePackageId,
+                                  packagesFromIndex, getPackageTarballPath)
+import           Stack.Sig.Doc
+import qualified Stack.Sig.GPG as GPG
+import           Stack.Sig.Hackage
+import           Stack.Sig.Types
+import           System.Directory (getTemporaryDirectory,
+                                   getDirectoryContents,
+                                   createDirectoryIfMissing)
+import           System.FilePath ((</>))
+import           System.Process (readProcessWithExitCode)
 
 sign :: String -> FilePath -> IO ()
 sign url filePath =
@@ -66,7 +59,7 @@ sign url filePath =
      (_code,_out,_err) <-
        readProcessWithExitCode "tar"
                                ["xf",filePath,"-C",workDir,"--strip","1"]
-                               mempty
+                               []
      cabalFiles <-
        (filter (isSuffixOf ".cabal")) <$>
        (getDirectoryContents workDir)

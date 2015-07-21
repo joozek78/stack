@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-|
 Module      : Stack.Sig.Trust
 Description : Trusting Mappings
@@ -12,7 +10,8 @@ Portability : POSIX
 
 module Stack.Sig.Trust where
 
-import BasePrelude
+import Control.Exception (throwIO)
+import Data.String (fromString)
 import Stack.Sig.Config
 import Stack.Sig.GPG
 import Stack.Sig.Types

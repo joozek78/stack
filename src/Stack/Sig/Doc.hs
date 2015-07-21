@@ -1,7 +1,6 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -16,49 +15,29 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Stack.Sig.Doc
-       (ToDoc(..), putToDoc, putHeader, putPkgOK)
+module Stack.Sig.Doc (ToDoc(..), putToDoc, putHeader, putPkgOK)
        where
 
-import BasePrelude hiding
-    ( (<>),
-      (<+>),
-      (<$>),
-      empty )
 import Control.Monad.Catch ()
-import Control.Monad.IO.Class ( MonadIO, liftIO )
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control ()
-import qualified Data.ByteString.Char8 as C ( unpack )
-import Data.Map ( Map )
-import qualified Data.Map.Strict as M ( toList )
-import Data.Set ( Set )
-import qualified Data.Set as S ( toList )
-import Data.Text ( Text )
-import qualified Data.Text as T ( unpack )
+import qualified Data.ByteString.Char8 as C (unpack)
+import Data.List (intercalate)
+import Data.Version (Version(..))
+import Data.Map (Map)
+import qualified Data.Map.Strict as M
+import Data.Set (Set)
+import qualified Data.Set as S
+import Data.Text (Text)
+import qualified Data.Text as T
 import Distribution.Package
-    ( PackageName, PackageIdentifier(pkgName, pkgVersion) )
-import Distribution.Text ( display )
+       (PackageName, PackageIdentifier(pkgName, pkgVersion))
+import Distribution.Text (display)
 import Stack.Sig.Types
-    ( Config(..),
-      FingerprintSample(FingerprintSample),
-      Signer(..),
-      Mapping(..),
-      Signature,
-      Archive(..) )
-import Text.Email.Validate ( EmailAddress, toByteString )
+import Text.Email.Validate (EmailAddress, toByteString)
 import Text.PrettyPrint.ANSI.Leijen
-    ( Doc,
-      vsep,
-      text,
-      putDoc,
-      linebreak,
-      indent,
-      hang,
-      fill,
-      empty,
-      (<>),
-      (<+>),
-      (<$>) )
+       (Doc, vsep, text, putDoc, linebreak, indent, hang, fill, empty,
+        (<>), (<+>), (<$>))
 
 default (Text)
 
