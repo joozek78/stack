@@ -10,10 +10,10 @@ Portability : POSIX
 
 module Stack.Sig.Init where
 
-import Stack.Sig.Config ( defaultConfig, writeConfigIfMissing )
-import Stack.Sig.Update ( update )
+import Stack.Sig.Config
+import Stack.Sig.Update
 
 initialize :: String -> IO ()
-initialize url =
-  do writeConfigIfMissing defaultConfig
-     update url
+initialize url = do
+    writeConfigIfMissing defaultConfig
+    update url

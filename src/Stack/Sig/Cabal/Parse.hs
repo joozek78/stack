@@ -19,16 +19,14 @@ import qualified Text.ParserCombinators.ReadP as ReadP
 
 -- | Parse a package name.
 parsePackageName :: String -> Maybe PackageName
-parsePackageName s =
-  case reverse (Compat.readP_to_S parsePackageNameQ s) of
-    ((name,""):_) -> Just name
-    _ -> Nothing
+parsePackageName s = case reverse (Compat.readP_to_S parsePackageNameQ s) of
+        ((name,""):_) -> Just name
+        _ -> Nothing
 
 -- FIXME This is returning Nothing for packages with a dash in the name (eg, auto-update)
 
 -- | Parse a package version.
 parseVersion :: String -> Maybe Version
-parseVersion s =
-  case reverse (ReadP.readP_to_S V.parseVersion s) of
-    ((ver,""):_) -> Just ver
-    _ -> Nothing
+parseVersion s = case reverse (ReadP.readP_to_S V.parseVersion s) of
+        ((ver,""):_) -> Just ver
+        _ -> Nothing

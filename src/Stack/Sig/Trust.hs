@@ -18,12 +18,13 @@ import Stack.Sig.Types
 import Text.Email.Validate (validate)
 
 trust :: String -> String -> IO ()
-trust fingerprint email =
-  do cfg <- readConfig
-     case validate (fromString email) of
-       Left e ->
-         throwIO (InvalidEmailException e)
-       Right email' ->
-         do fullFP <-
-              fullFingerprint (FingerprintSample (fromString fingerprint))
+trust fingerprint email = do
+    cfg <- readConfig
+    case validate (fromString email) of
+        Left e -> throwIO (InvalidEmailException e)
+        Right email' -> do
+            fullFP <-
+                fullFingerprint
+                    (FingerprintSample
+                         (fromString fingerprint))
             addSigner cfg (Signer fullFP email')

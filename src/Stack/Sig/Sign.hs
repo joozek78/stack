@@ -47,66 +47,74 @@ import           System.FilePath ((</>))
 import           System.Process (readProcessWithExitCode)
 
 sign :: String -> FilePath -> IO ()
-sign url filePath =
-  do putHeader "Signing Package"
-     tempDir <- getTemporaryDirectory
-     uuid <- nextRandom
-     let workDir = tempDir </> toString uuid
-     createDirectoryIfMissing True workDir
-     -- TODO USE HASKELL'S `TAR` PACKAGE FOR EXTRACTING MIGHT WORK
-     -- BETTER ON SOME PLATFORMS THAN readProcessWithExitCode +
-     -- TAR.EXE
-     (_code,_out,_err) <-
-       readProcessWithExitCode "tar"
-                               ["xf",filePath,"-C",workDir,"--strip","1"]
-                               []
-     cabalFiles <-
-       (filter (isSuffixOf ".cabal")) <$>
-       (getDirectoryContents workDir)
-     if length cabalFiles < 1
+sign url filePath = do
+    putHeader "Signing Package"
+    tempDir <- getTemporaryDirectory
+    uuid <- nextRandom
+    let workDir = tempDir </> toString uuid
+    createDirectoryIfMissing True workDir
+    -- TODO USE HASKELL'S `TAR` PACKAGE FOR EXTRACTING MIGHT WORK
+    -- BETTER ON SOME PLATFORMS THAN readProcessWithExitCode +
+    -- TAR.EXE
+    (_code,_out,_err) <-
+        readProcessWithExitCode
+            "tar"
+            ["xf", filePath, "-C", workDir, "--strip", "1"]
+            []
+    cabalFiles <-
+        (filter (isSuffixOf ".cabal")) <$>
+        (getDirectoryContents workDir)
+    if length cabalFiles < 1
         then undefined
-        else do pkg <-
-                  cabalFilePackageId (workDir </> head cabalFiles)
-                signPackage url pkg filePath
-                putPkgOK pkg
+        else do
+            pkg <-
+                cabalFilePackageId
+                    (workDir </> head cabalFiles)
+            signPackage url pkg filePath
+            putPkgOK pkg
 
 signAll :: forall (m :: * -> *).
-           (MonadIO m,MonadThrow m,MonadBaseControl IO m)
+           (MonadIO m, MonadThrow m, MonadBaseControl IO m)
         => String -> String -> m ()
-signAll url uname =
-  do putHeader "Signing Packages"
-     fromHackage <- packagesForMaintainer uname
-     fromIndex <- packagesFromIndex
-     forM_ (filter (\x ->
-                      (pkgName x) `elem`
-                      (map pkgName fromHackage))
-                   fromIndex)
-           (\pkg ->
-              liftIO (do cabalFetch ["--no-dependencies"]
-                                    pkg
-                         filePath <- getPackageTarballPath pkg
-                         signPackage url pkg filePath
-                         putPkgOK pkg))
-
---------------
--- Internal --
---------------
+signAll url uname = do
+    putHeader "Signing Packages"
+    fromHackage <- packagesForMaintainer uname
+    fromIndex <- packagesFromIndex
+    forM_
+        (filter
+             (\x ->
+                   (pkgName x) `elem`
+                   (map pkgName fromHackage))
+             fromIndex)
+        (\pkg ->
+              liftIO
+                  (do cabalFetch
+                          ["--no-dependencies"]
+                          pkg
+                      filePath <- getPackageTarballPath pkg
+                      signPackage url pkg filePath
+                      putPkgOK pkg))
 
 signPackage :: String -> PackageIdentifier -> FilePath -> IO ()
-signPackage url pkg filePath =
-  do sig@(Signature signature) <- GPG.sign filePath
-     let (PackageName name) = pkgName pkg
-         version = showVersion (pkgVersion pkg)
-     fingerprint <-
-       GPG.verifyFile sig filePath >>=
-       GPG.fullFingerprint
-     req <-
-       parseUrl (url <> "/upload/signature/" <> name <> "/" <> version <> "/" <>
-                 T.unpack (fingerprintSample fingerprint))
-     let put =
-           req {method = methodPut
-               ,requestBody =
-                  RequestBodyBS signature}
-     res <- withManager (httpLbs put)
-     when (responseStatus res /= status200)
-          (throwIO (GPGSignException "unable to sign & upload package"))
+signPackage url pkg filePath = do
+    sig@(Signature signature) <- GPG.sign filePath
+    let (PackageName name) = pkgName pkg
+        version = showVersion
+                (pkgVersion pkg)
+    fingerprint <-
+        GPG.verifyFile sig filePath >>=
+        GPG.fullFingerprint
+    req <-
+        parseUrl
+            (url <> "/upload/signature/" <> name <> "/" <> version <> "/" <>
+             T.unpack (fingerprintSample fingerprint))
+    let put = req
+            { method = methodPut
+            , requestBody = RequestBodyBS signature
+            }
+    res <-
+        withManager
+            (httpLbs put)
+    when
+        (responseStatus res /= status200)
+        (throwIO (GPGSignException "unable to sign & upload package"))

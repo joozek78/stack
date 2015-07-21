@@ -37,32 +37,39 @@ import           System.Locale (defaultTimeLocale)
 #endif
 
 update :: String -> IO ()
-update url =
-  do home <- getHomeDirectory
-     temp <- getTemporaryDirectory
-     let tempFile = temp </> "sig-archive.tar.gz"
-         configPath = home </> configDir
-         archivePath = configPath </> archiveDir
-     request <-
-       parseUrl (url <> "/download/archive")
-     catch (withManager
-              (\mgr ->
-                 do res <- http request mgr
-                    (responseBody res) C.$$+-
-                      sinkFile tempFile))
-           (\e ->
-              throwIO (SigServiceException (show (e :: SomeException))))
-     oldExists <- doesDirectoryExist archivePath
-     when oldExists
-          (do time <- getCurrentTime
-              renameDirectory
+update url = do
+    home <- getHomeDirectory
+    temp <- getTemporaryDirectory
+    let tempFile = temp </> "sig-archive.tar.gz"
+        configPath = home </> configDir
+        archivePath = configPath </> archiveDir
+    request <-
+        parseUrl (url <> "/download/archive")
+    catch
+        (withManager
+             (\mgr ->
+                   do res <- http request mgr
+                      (responseBody res) C.$$+-
+                          sinkFile tempFile))
+        (\e ->
+              throwIO
+                  (SigServiceException
+                       (show (e :: SomeException))))
+    oldExists <- doesDirectoryExist archivePath
+    when
+        oldExists
+        (do time <- getCurrentTime
+            renameDirectory
                 archivePath
-                (formatTime defaultTimeLocale
-                            (archivePath <> "-%s")
-                            time))
-     (code,_out,err) <-
-       readProcessWithExitCode "tar"
-                               ["xf",tempFile,"-C",configPath]
-                               []
-     unless (code == ExitSuccess)
-            (throwIO (ArchiveUpdateException err))
+                (formatTime
+                     defaultTimeLocale
+                     (archivePath <> "-%s")
+                     time))
+    (code,_out,err) <-
+        readProcessWithExitCode
+            "tar"
+            ["xf", tempFile, "-C", configPath]
+            []
+    unless
+        (code == ExitSuccess)
+        (throwIO (ArchiveUpdateException err))

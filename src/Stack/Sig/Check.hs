@@ -29,27 +29,31 @@ import System.Directory (getHomeDirectory)
 import System.FilePath ((</>))
 
 check :: [String] -> String -> IO ()
-check extraArgs pkg =
-  do cfg <- readConfig
-     home <- getHomeDirectory
-     let archDir = home </> configDir </> archiveDir
-     arch <- readArchive archDir
-     verifyMappings cfg
-                    (archiveMappings arch)
-                    archDir
-     putHeader "Verifying Packages"
-     pkgs <- cabalInstallDryRun extraArgs pkg
-     forM_ pkgs
-           (\p ->
+check extraArgs pkg = do
+    cfg <- readConfig
+    home <- getHomeDirectory
+    let archDir = home </> configDir </> archiveDir
+    arch <- readArchive archDir
+    verifyMappings
+        cfg
+        (archiveMappings arch)
+        archDir
+    putHeader "Verifying Packages"
+    pkgs <- cabalInstallDryRun extraArgs pkg
+    forM_
+        pkgs
+        (\p ->
               do cabalFetch [] p
                  let (PackageName name) = pkgName p
-                     version =
-                       intercalate "."
-                                   (map show (versionBranch (packageVersion p)))
-                     path =
-                       home </> ".cabal" </> "packages" </>
-                       "hackage.haskell.org" </> name </> version </>
-                       (name <> "-" <> version) <>
-                       ".tar.gz"
+                     version = intercalate
+                             "."
+                             (map
+                                  show
+                                  (versionBranch
+                                       (packageVersion p)))
+                     path = home </> ".cabal" </> "packages" </>
+                         "hackage.haskell.org" </> name </> version </>
+                         (name <> "-" <> version) <>
+                         ".tar.gz"
                  verifyPackage arch p path
                  putPkgOK p)

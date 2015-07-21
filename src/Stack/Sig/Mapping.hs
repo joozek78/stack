@@ -19,11 +19,11 @@ import           Stack.Sig.Types (SigException(..), Mapping)
 -- | Try to read a mapping from the file. Throws an exception if it
 -- fails.
 readMapping :: FilePath -> IO Mapping
-readMapping fp =
-  do mm <- S.readFile fp
-     case decodeEither mm of
-       Right m -> return m
-       Left e ->
-         throwIO (MappingParseException
-                    ("Unable to parse mapping from mapping file " <> fp <> ": " <>
-                     e))
+readMapping fp = do
+    mm <- S.readFile fp
+    case decodeEither mm of
+        Right m -> return m
+        Left e -> throwIO
+                (MappingParseException
+                     ("Unable to parse mapping from mapping file " <> fp <> ": " <>
+                      e))

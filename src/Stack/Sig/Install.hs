@@ -15,7 +15,7 @@ import Stack.Sig.Check
 import Stack.Sig.Doc
 
 install :: [String] -> String -> IO ()
-install extraArgs pkg =
-  do check extraArgs pkg
-     putHeader "Verifying Packages"
-     cabalInstall extraArgs pkg
+install extraArgs pkg = do
+    check extraArgs pkg
+    putHeader "Verifying Packages"
+    cabalInstall extraArgs pkg
