@@ -59,6 +59,7 @@ import qualified Stack.PackageIndex
 import           Stack.Repl
 import           Stack.SDist (getSDistTarball)
 import           Stack.Setup
+import           Stack.Sig.Sign
 import           Stack.Solver (solveExtraDeps)
 import           Stack.Types
 import           Stack.Types.Internal
@@ -173,7 +174,10 @@ main = withInterpreterArgs stackProgName $ \args isInterpreter ->
              addCommand "upload"
                         "Upload a package to Hackage"
                         uploadCmd
-                        (many $ strArgument $ metavar "TARBALL/DIR")
+                        ((,) <$> (flag False True
+                                  (long "sign" <>
+                                   help "GPG sign & submit signature")) <*>
+                         (many $ strArgument $ metavar "TARBALL/DIR"))
              addCommand "sdist"
                         "Create source distribution tarballs"
                         sdistCmd
@@ -666,9 +670,9 @@ upgradeCmd fromGit go = withConfigAndLock go $
     upgrade fromGit (globalResolver go)
 
 -- | Upload to Hackage
-uploadCmd :: [String] -> GlobalOpts -> IO ()
-uploadCmd [] _ = error "To upload the current package, please run 'stack upload .'"
-uploadCmd args go = do
+uploadCmd :: (Bool, [String]) -> GlobalOpts -> IO ()
+uploadCmd (_,[]) _ = error "To upload the current project, please run 'stack upload .'"
+uploadCmd (shouldSign,args) go = do
     let partitionM _ [] = return ([], [])
         partitionM f (x:xs) = do
             r <- f x
@@ -687,17 +691,22 @@ uploadCmd args go = do
                     Upload.setGetManager (return manager) $
                     Upload.defaultUploadSettings
             liftIO $ Upload.mkUploader config uploadSettings
+        sigServiceUrl = "https://sig.commercialhaskell.org/"
     if null dirs
         then withConfigAndLock go $ do
             uploader <- getUploader
             liftIO $ forM_ files (canonicalizePath >=> Upload.upload uploader)
         else withBuildConfigAndLock go $ \_ -> do
             uploader <- getUploader
-            liftIO $ forM_ files (canonicalizePath >=> Upload.upload uploader)
+            forM_ files (\f -> do liftIO (Upload.upload uploader f)
+                                  when shouldSign
+                                    (sign sigServiceUrl f))
             forM_ dirs $ \dir -> do
                 pkgDir <- parseAbsDir =<< liftIO (canonicalizePath dir)
                 (tarName, tarBytes) <- getSDistTarball pkgDir
                 liftIO $ Upload.uploadBytes uploader tarName tarBytes
+                when shouldSign
+                  (signTarBytes sigServiceUrl tarName tarBytes)
 
 sdistCmd :: [String] -> GlobalOpts -> IO ()
 sdistCmd dirs go =

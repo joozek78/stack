@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 Module      : Stack.Sig.Sign
@@ -13,71 +14,110 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Stack.Sig.Sign (sign, signAll) where
+module Stack.Sig.Sign (sign, signTarBytes, signAll) where
 
-import           Control.Monad.Catch (MonadThrow)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Trans.Control (MonadBaseControl)
 import           Control.Applicative ((<$>))
+import           Control.Monad (when, void)
+import           Control.Monad.Catch (MonadMask, MonadThrow, bracket, throwM)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control (MonadBaseControl)
+import qualified Data.ByteString.Lazy as L
 import           Data.Foldable (forM_)
+import           Data.List (isSuffixOf)
 import           Data.Monoid ((<>))
-import           Control.Exception (throwIO)
-import           Control.Monad (when)
-import           Data.Version (showVersion)
 import qualified Data.Text as T
 import           Data.UUID (toString)
-import           Data.List (isSuffixOf)
 import           Data.UUID.V4 (nextRandom)
+import           Data.Version (showVersion)
 import           Distribution.Package (PackageName(PackageName),
                                        PackageIdentifier(..))
 import           Network.HTTP.Conduit (Response(..), RequestBody(..),
                                        Request(..), withManager,
                                        httpLbs, parseUrl)
 import           Network.HTTP.Types (status200, methodPut)
+import           Path
+import           Path.IO
 import           Stack.Sig.Cabal (cabalFetch, cabalFilePackageId,
                                   packagesFromIndex, getPackageTarballPath)
-import           Stack.Sig.Doc
 import qualified Stack.Sig.GPG as GPG
 import           Stack.Sig.Hackage
 import           Stack.Sig.Types
-import           System.Directory (getTemporaryDirectory,
-                                   getDirectoryContents,
-                                   createDirectoryIfMissing)
-import           System.FilePath ((</>))
+import           Stack.Types.Config
+import           System.Directory (getDirectoryContents)
 import           System.Process (readProcessWithExitCode)
 
-sign :: String -> FilePath -> IO ()
+withStackWorkTempDir :: forall (m :: * -> *).
+        (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+     => (Path Rel Dir -> m ()) -> m ()
+withStackWorkTempDir f = do
+    uuid <- liftIO nextRandom
+    uuidPath <-
+        parseRelDir
+            (toString uuid)
+    let tempDir = workDirRel </>
+            $(mkRelDir "tmp") </>
+            uuidPath
+    bracket
+        (createTree tempDir)
+        (const (removeTree tempDir))
+        (const (f tempDir))
+
+sign :: forall (m :: * -> *).
+        (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+     => String -> FilePath -> m ()
 sign url filePath = do
-    putHeader "Signing Package"
-    tempDir <- getTemporaryDirectory
-    uuid <- nextRandom
-    let workDir = tempDir </> toString uuid
-    createDirectoryIfMissing True workDir
-    -- TODO USE HASKELL'S `TAR` PACKAGE FOR EXTRACTING MIGHT WORK
-    -- BETTER ON SOME PLATFORMS THAN readProcessWithExitCode +
-    -- TAR.EXE
-    (_code,_out,_err) <-
-        readProcessWithExitCode
-            "tar"
-            ["xf", filePath, "-C", workDir, "--strip", "1"]
-            []
-    cabalFiles <-
-        (filter (isSuffixOf ".cabal")) <$>
-        (getDirectoryContents workDir)
-    if length cabalFiles < 1
-        then undefined
-        else do
-            pkg <-
-                cabalFilePackageId
-                    (workDir </> head cabalFiles)
-            signPackage url pkg filePath
-            putPkgOK pkg
+    withStackWorkTempDir
+        (\tempDir ->
+              (do liftIO
+                      (void
+                           (readProcessWithExitCode
+                                "tar"
+                                [ "xf"
+                                , filePath
+                                , "-C"
+                                , toFilePath tempDir
+                                , "--strip"
+                                , "1"]
+                                []))
+                  -- TODO USE HASKELL'S `TAR` PACKAGE FOR EXTRACTING MIGHT WORK
+                  -- BETTER ON SOME PLATFORMS THAN readProcessWithExitCode +
+                  -- TAR.EXE
+                  cabalFiles <-
+                      (filter (isSuffixOf ".cabal")) <$>
+                      (liftIO
+                           (getDirectoryContents
+                                (toFilePath tempDir)))
+                  when
+                      (null cabalFiles)
+                      (error ("bogus hackage tarball " <> filePath))
+                  cabalFile <-
+                      parseRelFile
+                          (head cabalFiles)
+                  pkg <-
+                      liftIO
+                          (cabalFilePackageId
+                               (toFilePath
+                                    (tempDir </> cabalFile)))
+                  signPackage url pkg filePath))
+
+signTarBytes :: forall (m :: * -> *).
+                (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+             => String -> FilePath -> L.ByteString -> m ()
+signTarBytes url tarFile bs = do
+    withStackWorkTempDir
+        (\tempDir ->
+              (do tarFilePath <- parseRelFile tarFile
+                  let tempFilePath = tempDir </> tarFilePath
+                      tempFile = toFilePath tempFilePath
+                  liftIO (L.writeFile tempFile bs)
+                  sign url tempFile))
 
 signAll :: forall (m :: * -> *).
-           (MonadIO m, MonadThrow m, MonadBaseControl IO m)
+           (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
         => String -> String -> m ()
 signAll url uname = do
-    putHeader "Signing Packages"
+    $logInfo "GPG signing all hackage packages"
     fromHackage <- packagesForMaintainer uname
     fromIndex <- packagesFromIndex
     forM_
@@ -87,16 +127,19 @@ signAll url uname = do
                    (map pkgName fromHackage))
              fromIndex)
         (\pkg ->
-              liftIO
-                  (do cabalFetch
+              do liftIO
+                     (cabalFetch
                           ["--no-dependencies"]
-                          pkg
-                      filePath <- getPackageTarballPath pkg
-                      signPackage url pkg filePath
-                      putPkgOK pkg))
+                          pkg)
+                 filePath <-
+                     liftIO (getPackageTarballPath pkg)
+                 signPackage url pkg filePath)
 
-signPackage :: String -> PackageIdentifier -> FilePath -> IO ()
+signPackage :: forall (m :: * -> *).
+               (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+            => String -> PackageIdentifier -> FilePath -> m ()
 signPackage url pkg filePath = do
+    $logInfo ("GPG signing " <> T.pack filePath)
     sig@(Signature signature) <- GPG.sign filePath
     let (PackageName name) = pkgName pkg
         version = showVersion
@@ -117,4 +160,4 @@ signPackage url pkg filePath = do
             (httpLbs put)
     when
         (responseStatus res /= status200)
-        (throwIO (GPGSignException "unable to sign & upload package"))
+        (throwM (GPGSignException "unable to sign & upload package"))
