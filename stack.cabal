@@ -81,22 +81,6 @@ library
                      Stack.Build.Types
                      Stack.Upgrade
                      Stack.Upload
-                     System.Process.Read
-                     System.Process.Log
-                     System.Process.Run
-                     Network.HTTP.Download.Verified
-                     Data.Attoparsec.Args
-  other-modules:     Network.HTTP.Download
-                     Control.Concurrent.Execute
-                     Path.Find
-                     Path.IO
-                     System.Process.PagerEditor
-                     Paths_stack
-                     Data.Aeson.Extended
-                     Data.Attoparsec.Combinators
-                     Data.Binary.VersionTagged
-                     Data.Set.Monad
-                     Data.Maybe.Extra
                      Stack.Sig.Archive
                      Stack.Sig.Cabal
                      Stack.Sig.Cabal.Parse
@@ -114,6 +98,22 @@ library
                      Stack.Sig.Trust
                      Stack.Sig.Types
                      Stack.Sig.Update
+                     System.Process.Read
+                     System.Process.Log
+                     System.Process.Run
+                     Network.HTTP.Download.Verified
+                     Data.Attoparsec.Args
+  other-modules:     Network.HTTP.Download
+                     Control.Concurrent.Execute
+                     Path.Find
+                     Path.IO
+                     System.Process.PagerEditor
+                     Paths_stack
+                     Data.Aeson.Extended
+                     Data.Attoparsec.Combinators
+                     Data.Binary.VersionTagged
+                     Data.Set.Monad
+                     Data.Maybe.Extra
   build-depends:     Cabal >= 1.18.1.5
                    , aeson >= 0.8.0.2
                    , async >= 2.0.2
