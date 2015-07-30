@@ -16,14 +16,15 @@ Portability : POSIX
 
 module Stack.Sig.Sign (sign, signTarBytes, signAll) where
 
-import           Control.Applicative ((<$>))
-import           Control.Monad (when, void)
-import           Control.Monad.Catch (MonadMask, MonadThrow, bracket, throwM)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Applicative
+import           Control.Monad (when)
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
 import           Control.Monad.Logger
-import           Control.Monad.Trans.Control (MonadBaseControl)
+import           Control.Monad.Trans.Control
 import qualified Data.ByteString.Lazy as L
 import           Data.Foldable (forM_)
+import           Data.Functor (void)
 import           Data.List (isSuffixOf)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -48,8 +49,8 @@ import           System.Directory (getDirectoryContents)
 import           System.Process (readProcessWithExitCode)
 
 withStackWorkTempDir :: forall (m :: * -> *).
-        (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
-     => (Path Rel Dir -> m ()) -> m ()
+                        (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+                     => (Path Rel Dir -> m ()) -> m ()
 withStackWorkTempDir f = do
     uuid <- liftIO nextRandom
     uuidPath <-
@@ -64,7 +65,7 @@ withStackWorkTempDir f = do
         (const (f tempDir))
 
 sign :: forall (m :: * -> *).
-        (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+        (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
      => String -> FilePath -> m ()
 sign url filePath = do
     withStackWorkTempDir
@@ -95,14 +96,13 @@ sign url filePath = do
                       parseRelFile
                           (head cabalFiles)
                   pkg <-
-                      liftIO
-                          (cabalFilePackageId
-                               (toFilePath
-                                    (tempDir </> cabalFile)))
+                      cabalFilePackageId
+                          (toFilePath
+                               (tempDir </> cabalFile))
                   signPackage url pkg filePath))
 
 signTarBytes :: forall (m :: * -> *).
-                (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+                (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
              => String -> FilePath -> L.ByteString -> m ()
 signTarBytes url tarFile bs = do
     withStackWorkTempDir
@@ -114,7 +114,7 @@ signTarBytes url tarFile bs = do
                   sign url tempFile))
 
 signAll :: forall (m :: * -> *).
-           (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+           (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
         => String -> String -> m ()
 signAll url uname = do
     $logInfo "GPG signing all hackage packages"
@@ -123,20 +123,18 @@ signAll url uname = do
     forM_
         (filter
              (\x ->
-                   (pkgName x) `elem`
-                   (map pkgName fromHackage))
+                   pkgName x `elem`
+                   map pkgName fromHackage)
              fromIndex)
         (\pkg ->
-              do liftIO
-                     (cabalFetch
-                          ["--no-dependencies"]
-                          pkg)
-                 filePath <-
-                     liftIO (getPackageTarballPath pkg)
+              do cabalFetch
+                     ["--no-dependencies"]
+                     pkg
+                 filePath <- getPackageTarballPath pkg
                  signPackage url pkg filePath)
 
 signPackage :: forall (m :: * -> *).
-               (MonadIO m, MonadLogger m, MonadMask m, MonadThrow m, MonadBaseControl IO m)
+               (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
             => String -> PackageIdentifier -> FilePath -> m ()
 signPackage url pkg filePath = do
     $logInfo ("GPG signing " <> T.pack filePath)

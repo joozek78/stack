@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -13,9 +16,12 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-import           Control.Applicative ((<$>))
-import           Control.Exception (throwIO)
-import           Control.Monad (when)
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
 import qualified Data.ByteString as B
 import           Data.Maybe (fromJust)
 import           Data.Monoid ((<>))
@@ -52,41 +58,51 @@ defaultSigners = [ Signer
 defaultConfig :: Config
 defaultConfig = Config defaultSigners
 
-readConfig :: IO Config
+readConfig :: forall (m :: * -> *).
+              (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+              => m Config
 readConfig = do
-    home <- getHomeDirectory
+    home <- liftIO getHomeDirectory
     let cfg = home </> configDir </> configFile
-    result <- Y.decodeEither <$> B.readFile cfg
+    result <-
+        Y.decodeEither <$>
+        liftIO (B.readFile cfg)
     case result of
-        Left msg -> throwIO
+        Left msg -> throwM
                 (ConfigParseException
                      (show msg))
         Right config -> return config
 
-writeConfig :: Config -> IO ()
+writeConfig :: forall (m :: * -> *).
+              (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+            => Config -> m ()
 writeConfig cfg = do
-    home <- getHomeDirectory
+    home <- liftIO getHomeDirectory
     let configPath = home </> configDir </> configFile
-    oldExists <- doesFileExist configPath
+    oldExists <-
+        liftIO (doesFileExist configPath)
     when
         oldExists
-        (do time <- getCurrentTime
-            renameFile
-                configPath
-                (formatTime
-                     defaultTimeLocale
-                     (configPath <> "-%s")
-                     time))
-    createDirectoryIfMissing
-        True
-        (home </> configDir)
-    B.writeFile
-        configPath
-        (Y.encode
-             cfg
-             { configTrustedMappingSigners = ordNub
-                   (defaultSigners ++ configTrustedMappingSigners cfg)
-             })
+        (do time <- liftIO (getCurrentTime)
+            liftIO
+                (renameFile
+                     configPath
+                     (formatTime
+                          defaultTimeLocale
+                          (configPath <> "-%s")
+                          time)))
+    liftIO
+        (createDirectoryIfMissing
+             True
+             (home </> configDir))
+    liftIO
+        (B.writeFile
+             configPath
+             (Y.encode
+                  cfg
+                  { configTrustedMappingSigners = ordNub
+                        (defaultSigners ++ configTrustedMappingSigners cfg)
+                  }))
     where ordNub l = go Set.empty l
           go _ [] = []
           go s (x:xs) = if x `Set.member` s
@@ -94,17 +110,21 @@ writeConfig cfg = do
                   else x :
                        go (Set.insert x s) xs
 
-writeConfigIfMissing :: Config -> IO ()
+writeConfigIfMissing :: forall (m :: * -> *).
+                        (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+                     => Config -> m ()
 writeConfigIfMissing cfg = do
-    home <- getHomeDirectory
+    home <- liftIO getHomeDirectory
     let configPath = home </> configDir </> configFile
-    fileExists <- doesFileExist configPath
-    when
-        (not fileExists)
-        (writeConfig cfg)
+    fileExists <-
+        liftIO (doesFileExist configPath)
+    unless fileExists (writeConfig cfg)
 
-addSigner :: Config -> Signer -> IO ()
-addSigner cfg signer = writeConfig
+addSigner :: forall (m :: * -> *).
+             (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+          => Config -> Signer -> m ()
+addSigner cfg signer = do
+    writeConfig
         (cfg
          { configTrustedMappingSigners = (signer :
                                           (configTrustedMappingSigners cfg))

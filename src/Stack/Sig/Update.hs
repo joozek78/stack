@@ -1,4 +1,7 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 
 {-|
 Module      : Stack.Sig.Update
@@ -12,8 +15,12 @@ Portability : POSIX
 
 module Stack.Sig.Update where
 
-import           Control.Exception (catch, throwIO, SomeException)
-import           Control.Monad (when, unless)
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
 import qualified Data.Conduit as C (($$+-))
 import           Data.Conduit.Binary (sinkFile)
 import           Data.Monoid ((<>))
@@ -36,15 +43,17 @@ import           Data.Time (defaultTimeLocale)
 import           System.Locale (defaultTimeLocale)
 #endif
 
-update :: String -> IO ()
+update :: forall (m :: * -> *).
+          (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+       => String -> m ()
 update url = do
-    home <- getHomeDirectory
-    temp <- getTemporaryDirectory
+    home <- liftIO getHomeDirectory
+    temp <- liftIO getTemporaryDirectory
     let tempFile = temp </> "sig-archive.tar.gz"
         configPath = home </> configDir
         archivePath = configPath </> archiveDir
     request <-
-        parseUrl (url <> "/download/archive")
+        liftIO (parseUrl (url <> "/download/archive"))
     catch
         (withManager
              (\mgr ->
@@ -52,24 +61,27 @@ update url = do
                       (responseBody res) C.$$+-
                           sinkFile tempFile))
         (\e ->
-              throwIO
+              throwM
                   (SigServiceException
                        (show (e :: SomeException))))
-    oldExists <- doesDirectoryExist archivePath
+    oldExists <-
+        liftIO (doesDirectoryExist archivePath)
     when
         oldExists
-        (do time <- getCurrentTime
-            renameDirectory
-                archivePath
-                (formatTime
-                     defaultTimeLocale
-                     (archivePath <> "-%s")
-                     time))
+        (do time <- liftIO getCurrentTime
+            liftIO
+                (renameDirectory
+                     archivePath
+                     (formatTime
+                          defaultTimeLocale
+                          (archivePath <> "-%s")
+                          time)))
     (code,_out,err) <-
-        readProcessWithExitCode
-            "tar"
-            ["xf", tempFile, "-C", configPath]
-            []
+        liftIO
+            (readProcessWithExitCode
+                 "tar"
+                 ["xf", tempFile, "-C", configPath]
+                 [])
     unless
         (code == ExitSuccess)
-        (throwIO (ArchiveUpdateException err))
+        (throwM (ArchiveUpdateException err))

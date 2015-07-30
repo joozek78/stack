@@ -1,4 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 {-|
 Module      : Stack.Sig.Check
@@ -12,6 +15,11 @@ Portability : POSIX
 
 module Stack.Sig.Check where
 
+import Control.Applicative
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Control.Monad.Trans.Control
 import Data.Foldable (forM_)
 import Data.List (intercalate)
 import Data.Monoid ((<>))
@@ -28,10 +36,12 @@ import Stack.Sig.Types (Archive(..))
 import System.Directory (getHomeDirectory)
 import System.FilePath ((</>))
 
-check :: [String] -> String -> IO ()
+check :: forall (m :: * -> *).
+         (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+      => [String] -> String -> m ()
 check extraArgs pkg = do
     cfg <- readConfig
-    home <- getHomeDirectory
+    home <- liftIO getHomeDirectory
     let archDir = home </> configDir </> archiveDir
     arch <- readArchive archDir
     verifyMappings

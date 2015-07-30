@@ -1,4 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 
 {-|
@@ -13,11 +16,16 @@ Portability : POSIX
 
 module Stack.Sig.Archive where
 
+import           Control.Applicative
 import           Control.Arrow (second)
-import           Control.Monad (forM)
+import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
 import qualified Data.ByteString as S
-import           Data.List.Split (splitOn)
 import           Data.List (isSuffixOf)
+import           Data.List.Split (splitOn)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Set (Set)
@@ -32,13 +40,16 @@ import           System.Directory.Parse (parseDirectory, filterDirectory)
 import           System.FilePath (splitFileName, splitExtension, (</>))
 
 -- | Read an archive from a directory.
-readArchive :: FilePath -> IO Archive
+readArchive :: forall (m :: * -> *).
+               (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+            => FilePath -> m Archive
 readArchive dir = do
     mappingFilepaths <-
-        parseDirectory
-            (dir </> mappingsDir)
-            (T.stripSuffix ".yaml" .
-             T.pack)
+        liftIO
+            (parseDirectory
+                 (dir </> mappingsDir)
+                 (T.stripSuffix ".yaml" .
+                  T.pack))
     mappings <-
         mapM
             (\(fp,name) ->
@@ -56,23 +67,26 @@ readArchive dir = do
         }
 
 -- | Read all signatures from the directory.
-readSignatures :: FilePath -> IO (Map PackageIdentifier (Set Signature))
+readSignatures :: forall (m :: * -> *).
+                  (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
+               => FilePath -> m (Map PackageIdentifier (Set Signature))
 readSignatures dir = do
     packageNames <-
-        parseDirectory dir parsePackageName
+        liftIO (parseDirectory dir parsePackageName)
     fmap
         (M.fromList . concat)
         (mapM
              (\(pkgDir,name) ->
                    do versions <-
-                          parseDirectory pkgDir parseVersion
+                          liftIO (parseDirectory pkgDir parseVersion)
                       versionSignatures <-
                           mapM
                               (\(verDir,ver) ->
                                     do signatures <-
-                                           filterDirectory
-                                               verDir
-                                               (isSuffixOf ".asc")
+                                           liftIO
+                                               (filterDirectory
+                                                    verDir
+                                                    (isSuffixOf ".asc"))
                                        let signatures' = foldl
                                                    (\a b ->
                                                          let sig = snd
@@ -93,7 +107,7 @@ readSignatures dir = do
                                            (forM
                                                 (M.elems signatures')
                                                 (fmap Signature .
-                                                 S.readFile)))
+                                                 liftIO . S.readFile)))
                               versions
                       return (map (second S.fromList) versionSignatures))
              packageNames)

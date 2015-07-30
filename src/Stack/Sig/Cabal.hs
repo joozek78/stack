@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -16,12 +17,14 @@ Portability : POSIX
 module Stack.Sig.Cabal where
 
 import qualified Codec.Archive.Tar as Tar
-import           Conduit (MonadIO(..), MonadThrow(..), MonadBaseControl,
-                          (=$), ($$), runResourceT, sourceFile, sinkList,
+import           Conduit ((=$), ($$), runResourceT, sourceFile, sinkList,
                           linesUnboundedC, decodeUtf8C, concatMapC)
-import           Control.Applicative (pure)
-import           Control.Exception (throwIO)
-import           Control.Monad (unless)
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
 import qualified Data.ByteString.Lazy as BL
 import           Data.List (intercalate, stripPrefix, isSuffixOf)
 import           Data.List.Split (splitOn)
@@ -44,20 +47,23 @@ import           System.FilePath ((</>))
 import           System.Process (waitForProcess, spawnProcess,
                                  readProcessWithExitCode)
 
-cabalInstallDryRun :: [String] -> String -> IO [PackageIdentifier]
+cabalInstallDryRun :: forall (m :: * -> *).
+                      (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+                   => [String] -> String -> m [PackageIdentifier]
 cabalInstallDryRun opts pkg = do
     (code,out,err) <-
-        readProcessWithExitCode
-            "cabal"
-            ([ "install"
-             , "--dry-run"
-             , "--package-db=clear"
-             , "--package-db=global"] ++
-             opts ++
-             [pkg])
-            []
+        liftIO
+            (readProcessWithExitCode
+                 "cabal"
+                 ([ "install"
+                  , "--dry-run"
+                  , "--package-db=clear"
+                  , "--package-db=global"] ++
+                  opts ++
+                  [pkg])
+                 [])
     if code /= ExitSuccess
-        then throwIO (CabalPackageListException err)
+        then throwM (CabalPackageListException err)
         else return
                  (if (last . lines $ out) ==
                      "Use --reinstall if you want to reinstall anyway."
@@ -83,42 +89,48 @@ cabalInstallDryRun opts pkg = do
               drop 2 .
               lines
 
-cabalFetch :: [String] -> PackageIdentifier -> IO ()
+cabalFetch :: forall (m :: * -> *).
+              (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+           => [String] -> PackageIdentifier -> m ()
 cabalFetch opts (PackageIdentifier (PackageName name) (Version branch _tags)) = do
     let pkg = name <> "==" <>
             intercalate
                 "."
                 (map show branch)
     (code,_out,err) <-
-        readProcessWithExitCode
-            "cabal"
-            (["fetch"] ++
-             opts ++
-             [pkg])
-            []
-    unless
-        (code == ExitSuccess)
-        (throwIO (CabalFetchException err))
+        liftIO
+            (readProcessWithExitCode
+                 "cabal"
+                 (["fetch"] ++
+                  opts ++
+                  [pkg])
+                 [])
+    unless (code == ExitSuccess)
+        (throwM (CabalFetchException err))
 
-cabalInstall :: [String] -> String -> IO ()
+cabalInstall :: forall (m :: * -> *).
+                (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+             => [String] -> String -> m ()
 cabalInstall opts pkg = do
     code <-
-        waitForProcess =<<
-        spawnProcess
-            "cabal"
-            (["install"] ++
-             opts ++
-             [pkg])
-    unless
-        (code == ExitSuccess)
-        (throwIO (CabalInstallException "unable to cabal-install"))
+        liftIO
+            (waitForProcess =<<
+             spawnProcess
+                 "cabal"
+                 (["install"] ++
+                  opts ++
+                  [pkg]))
+    unless (code == ExitSuccess)
+        (throwM (CabalInstallException "unable to cabal-install"))
 
-cabalFilePackageId :: FilePath -> IO PackageIdentifier
-cabalFilePackageId fp = pure . package . packageDescription =<<
-    readPackageDescription silent fp
+cabalFilePackageId :: forall (m :: * -> *).
+                      (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+                   => FilePath -> m PackageIdentifier
+cabalFilePackageId fp = return . package . packageDescription =<<
+    liftIO (readPackageDescription silent fp)
 
 packagesFromIndex :: forall (m :: * -> *).
-                     (MonadIO m, MonadThrow m, MonadBaseControl IO m)
+                     (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
                   => m [PackageIdentifier]
 packagesFromIndex = do
     indexPath <- getPackageIndexPath
@@ -152,14 +164,14 @@ packagesFromIndex = do
             _ -> filePathsFromTarball pkgs es
 
 getPackageIndexPath :: forall (m :: * -> *).
-                       (MonadIO m, MonadThrow m, MonadBaseControl IO m)
+                       (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
                     => m FilePath
 getPackageIndexPath = do
     cabalCacheDir <- getCabalCacheDir
     return (cabalCacheDir </> "hackage.haskell.org" </> "00-index.tar")
 
 getPackageTarballPath :: forall (m :: * -> *).
-                         (MonadIO m, MonadThrow m, MonadBaseControl IO m)
+                       (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
                       => PackageIdentifier -> m FilePath
 getPackageTarballPath pkg = do
     let pName = (show . disp . pkgName) pkg
@@ -170,7 +182,7 @@ getPackageTarballPath pkg = do
          (pName <> "-" <> pVersion <> ".tar.gz"))
 
 getCabalCacheDir :: forall (m :: * -> *).
-                    (MonadIO m, MonadThrow m, MonadBaseControl IO m)
+                    (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
                  => m FilePath
 getCabalCacheDir = do
     c <- liftIO (getAppUserDataDirectory "cabal")

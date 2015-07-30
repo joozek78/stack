@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
+
 {-|
 Module      : Stack.Sig.Install
 Description : Haskell Package Signing Tool: Installing with Cabal
@@ -10,11 +14,18 @@ Portability : POSIX
 
 module Stack.Sig.Install where
 
+import Control.Applicative
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Control.Monad.Trans.Control
 import Stack.Sig.Cabal
 import Stack.Sig.Check
 import Stack.Sig.Doc
 
-install :: [String] -> String -> IO ()
+install :: forall (m :: * -> *).
+           (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
+        => [String] -> String -> m ()
 install extraArgs pkg = do
     check extraArgs pkg
     putHeader "Verifying Packages"
