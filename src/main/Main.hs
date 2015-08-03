@@ -283,44 +283,44 @@ main = withInterpreterArgs stackProgName $ \args isInterpreter ->
              addSubCommands
                Sig.sigCmdName
                "Subcommands specific to package signatures (EXPERIMENTAL)"
-               (addSubCommands
-                Sig.sigSignCmdName
-                "Sign a a single package or all your packages"
-                (do addCommand
-                      Sig.sigInitCmdName
-                      "Initialize the signature archive"
-                      sigInitCmd
-                      Sig.sigInitOpts
-                    addCommand
-                      Sig.sigUpdateCmdName
-                      "Update the signature archive"
-                      sigUpdateCmd
-                      Sig.sigUpdateOpts
-                    addCommand
-                      Sig.sigMappingCmdName
-                      "List signature trust mappings"
-                      sigMappingCmd
-                      Sig.sigMappingOpts
-                    addCommand
-                      Sig.sigTrustCmdName
-                      "Trust a signer of mappings"
-                      sigTrustCmd
-                      Sig.sigTrustOpts
-                    addCommand
-                      Sig.sigSignSdistCmdName
-                      "Sign a single sdist package file"
-                      sigSignSdistCmd
-                      Sig.sigSignSdistOpts
-                    addCommand
-                      Sig.sigSignHackageCmdName
-                      "Sign a all your packages on Hackage"
-                      sigSignHackageCmd
-                      Sig.sigSignHackageOpts
-                    addCommand
+               (do addCommand
+                     Sig.sigInitCmdName
+                     "Initialize the signature archive"
+                     sigInitCmd
+                     Sig.sigInitOpts
+                   addCommand
+                     Sig.sigUpdateCmdName
+                     "Update the signature archive"
+                     sigUpdateCmd
+                     Sig.sigUpdateOpts
+                   addCommand
+                     Sig.sigMappingCmdName
+                     "List signature trust mappings"
+                     sigMappingCmd
+                     Sig.sigMappingOpts
+                   addCommand
+                     Sig.sigTrustCmdName
+                     "Trust a signer of mappings"
+                     sigTrustCmd
+                     Sig.sigTrustOpts
+                   addSubCommands
+                     Sig.sigSignCmdName
+                     "Sign a a single package or all your packages"
+                     (do addCommand
+                           Sig.sigSignSdistCmdName
+                           "Sign a single sdist package file"
+                           sigSignSdistCmd
+                           Sig.sigSignSdistOpts
+                         addCommand
+                           Sig.sigSignHackageCmdName
+                           "Sign a all your packages on Hackage"
+                           sigSignHackageCmd
+                           Sig.sigSignHackageOpts)
+                   addCommand
                       Sig.sigCheckCmdName
                       "Check a package's signature (with dependencies)"
                       sigCheckCmd
-                      Sig.sigCheckOpts)))
+                      Sig.sigCheckOpts))
              -- commandsFromPlugins plugins pluginShouldHaveRun) https://github.com/commercialhaskell/stack/issues/322
      case eGlobalRun of
        Left (exitCode :: ExitCode) -> do
