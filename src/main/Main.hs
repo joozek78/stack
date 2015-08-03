@@ -869,7 +869,7 @@ sigInitCmd url go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Initializing"))
+        (Sig.initialize url)
 
 sigUpdateCmd :: String -> GlobalOpts -> IO ()
 sigUpdateCmd url go@GlobalOpts{..} = do
@@ -878,7 +878,7 @@ sigUpdateCmd url go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Updating"))
+        (Sig.update url)
 
 sigMappingCmd :: () -> GlobalOpts -> IO ()
 sigMappingCmd () go@GlobalOpts{..} = do
@@ -887,7 +887,7 @@ sigMappingCmd () go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Showing mappings"))
+        Sig.list
 
 sigTrustCmd :: (String, String) -> GlobalOpts -> IO ()
 sigTrustCmd (fingerprint,email) go@GlobalOpts{..} = do
@@ -896,7 +896,7 @@ sigTrustCmd (fingerprint,email) go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Trusting"))
+        (Sig.trust fingerprint email)
 
 sigSignSdistCmd :: (String, String) -> GlobalOpts -> IO ()
 sigSignSdistCmd (url,path) go@GlobalOpts{..} = do
@@ -905,7 +905,7 @@ sigSignSdistCmd (url,path) go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Signing one sdist package file"))
+        (Sig.sign url path)
 
 sigSignHackageCmd :: (String, String) -> GlobalOpts -> IO ()
 sigSignHackageCmd (url,user) go@GlobalOpts{..} = do
@@ -914,7 +914,7 @@ sigSignHackageCmd (url,user) go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Signing all of your hackage packages"))
+        (Sig.signAll url user)
 
 sigCheckCmd :: String -> GlobalOpts -> IO ()
 sigCheckCmd package go@GlobalOpts{..} = do
@@ -923,7 +923,7 @@ sigCheckCmd package go@GlobalOpts{..} = do
         manager
         (lcConfig lc)
         go
-        (liftIO (putStrLn "Checking package"))
+        (Sig.check empty package)
 
 -- | Load the configuration with a manager. Convenience function used
 -- throughout this module.
