@@ -40,7 +40,6 @@ import Stack.Sig.Doc as Sig
 import Stack.Sig.GPG as Sig
 import Stack.Sig.Hackage as Sig
 import Stack.Sig.Init as Sig
-import Stack.Sig.Install as Sig
 import Stack.Sig.List as Sig
 import Stack.Sig.Mapping as Sig
 import Stack.Sig.Sign as Sig

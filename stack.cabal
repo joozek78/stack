@@ -92,7 +92,6 @@ library
                      Stack.Sig.GPG
                      Stack.Sig.Hackage
                      Stack.Sig.Init
-                     Stack.Sig.Install
                      Stack.Sig.List
                      Stack.Sig.Mapping
                      Stack.Sig.Sign
