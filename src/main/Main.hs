@@ -59,6 +59,7 @@ import qualified Stack.PackageIndex
 import           Stack.Repl
 import           Stack.SDist (getSDistTarball)
 import           Stack.Setup
+import qualified Stack.Sig as Sig
 import           Stack.Sig.Sign
 import           Stack.Solver (solveExtraDeps)
 import           Stack.Types
@@ -278,7 +279,48 @@ main = withInterpreterArgs stackProgName $ \args isInterpreter ->
                (addCommand Image.imgDockerCmdName
                 "Build a Docker image for the project"
                 imgDockerCmd
-                (pure ())))
+                (pure ()))
+             addSubCommands
+               Sig.sigCmdName
+               "Subcommands specific to package signatures (EXPERIMENTAL)"
+               (addSubCommands
+                Sig.sigSignCmdName
+                "Sign a a single package or all your packages"
+                (do addCommand
+                      Sig.sigInitCmdName
+                      "Initialize the signature archive"
+                      sigInitCmd
+                      Sig.sigInitOpts
+                    addCommand
+                      Sig.sigUpdateCmdName
+                      "Update the signature archive"
+                      sigUpdateCmd
+                      Sig.sigUpdateOpts
+                    addCommand
+                      Sig.sigMappingCmdName
+                      "List signature trust mappings"
+                      sigMappingCmd
+                      Sig.sigMappingOpts
+                    addCommand
+                      Sig.sigTrustCmdName
+                      "Trust a signer of mappings"
+                      sigTrustCmd
+                      Sig.sigTrustOpts
+                    addCommand
+                      Sig.sigSignSdistCmdName
+                      "Sign a single sdist package file"
+                      sigSignSdistCmd
+                      Sig.sigSignSdistOpts
+                    addCommand
+                      Sig.sigSignHackageCmdName
+                      "Sign a all your packages on Hackage"
+                      sigSignHackageCmd
+                      Sig.sigSignHackageOpts
+                    addCommand
+                      Sig.sigCheckCmdName
+                      "Check a package's signature (with dependencies)"
+                      sigCheckCmd
+                      Sig.sigCheckOpts)))
              -- commandsFromPlugins plugins pluginShouldHaveRun) https://github.com/commercialhaskell/stack/issues/322
      case eGlobalRun of
        Left (exitCode :: ExitCode) -> do
@@ -819,6 +861,69 @@ imgDockerCmd () go@GlobalOpts{..} = do
                 defaultBuildOpts
             Image.stageContainerImageArtifacts)
         (Just Image.createContainerImageFromStage)
+
+sigInitCmd :: String -> GlobalOpts -> IO ()
+sigInitCmd url go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Initializing"))
+
+sigUpdateCmd :: String -> GlobalOpts -> IO ()
+sigUpdateCmd url go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Updating"))
+
+sigMappingCmd :: () -> GlobalOpts -> IO ()
+sigMappingCmd () go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Showing mappings"))
+
+sigTrustCmd :: (String, String) -> GlobalOpts -> IO ()
+sigTrustCmd (fingerprint,email) go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Trusting"))
+
+sigSignSdistCmd :: (String, String) -> GlobalOpts -> IO ()
+sigSignSdistCmd (url,path) go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Signing one sdist package file"))
+
+sigSignHackageCmd :: (String, String) -> GlobalOpts -> IO ()
+sigSignHackageCmd (url,user) go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Signing all of your hackage packages"))
+
+sigCheckCmd :: String -> GlobalOpts -> IO ()
+sigCheckCmd package go@GlobalOpts{..} = do
+    (manager,lc) <- liftIO $ loadConfigWithOpts go
+    runStackTGlobal
+        manager
+        (lcConfig lc)
+        go
+        (liftIO (putStrLn "Checking package"))
 
 -- | Load the configuration with a manager. Convenience function used
 -- throughout this module.

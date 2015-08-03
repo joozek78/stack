@@ -36,10 +36,10 @@ import           System.Exit (ExitCode(..))
 import           System.FilePath ((</>))
 import           System.Process (readProcessWithExitCode)
 
-sign :: forall (m :: * -> *).
-        (Monad m, MonadIO m, MonadThrow m)
-     => FilePath -> m Signature
-sign path = do
+signPackage :: forall (m :: * -> *).
+               (Monad m, MonadIO m, MonadThrow m)
+            => FilePath -> m Signature
+signPackage path = do
     (code,out,err) <-
         liftIO
             (readProcessWithExitCode

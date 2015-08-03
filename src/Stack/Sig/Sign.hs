@@ -138,7 +138,7 @@ signPackage :: forall (m :: * -> *).
             => String -> PackageIdentifier -> FilePath -> m ()
 signPackage url pkg filePath = do
     $logInfo ("GPG signing " <> T.pack filePath)
-    sig@(Signature signature) <- GPG.sign filePath
+    sig@(Signature signature) <- GPG.signPackage filePath
     let (PackageName name) = pkgName pkg
         version = showVersion
                 (pkgVersion pkg)
