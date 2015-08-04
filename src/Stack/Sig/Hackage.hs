@@ -29,7 +29,7 @@ import Distribution.Package (PackageIdentifier)
 import Distribution.Text (simpleParse)
 import Network.HTTP.Conduit
        (parseUrl, withManager, httpLbs, requestHeaders, responseBody)
-import Stack.Sig.Types (SigException(HackageAPIException))
+import Stack.Types.Sig (SigException(HackageAPIException))
 
 data UserDetail = UserDetail
     { groups :: [String]

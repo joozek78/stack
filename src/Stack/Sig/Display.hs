@@ -22,8 +22,8 @@ import qualified Data.Text.Encoding as T
 import           Data.Version (showVersion)
 import           Distribution.Package (PackageName(..),
                                        PackageIdentifier(..))
-import           Stack.Sig.Types
 import           Distribution.Text (display)
+import           Stack.Types.Sig
 import           Text.Email.Validate (toByteString)
 
 displayPackageIdentifier :: PackageIdentifier -> Text

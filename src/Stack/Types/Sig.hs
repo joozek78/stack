@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {-|
-Module      : Stack.Sig.Types
+Module      : Stack.Types.Sig
 Description : Signature Types
 Copyright   : (c) FPComplete.com, 2015
 License     : BSD3
@@ -14,9 +14,9 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Stack.Sig.Types
+module Stack.Types.Sig
        (Archive(..), Signature(..), Mapping(..), Signer(..),
-        FingerprintSample(..), Config(..), SigException(..))
+        FingerprintSample(..), SigConfig(..), SigException(..))
        where
 
 import           Control.Exception (Exception)
@@ -152,19 +152,19 @@ instance ToJSON (Aeson EmailAddress) where
             (T.decodeUtf8
                  (toByteString x))
 
--- | Config file ~/.sig/config.yaml
-data Config = Config
+-- | SigConfig file ~/.sig/config.yaml
+data SigConfig = SigConfig
     { configTrustedMappingSigners :: [Signer]
     } deriving (Show)
 
-instance FromJSON Config where
+instance FromJSON SigConfig where
     parseJSON j = do
         o <- parseJSON j
         signers <- o .: "trusted-mapping-signers"
-        return (Config signers)
+        return (SigConfig signers)
 
-instance ToJSON Config where
-    toJSON (Config signers) = object ["trusted-mapping-signers" .= signers]
+instance ToJSON SigConfig where
+    toJSON (SigConfig signers) = object ["trusted-mapping-signers" .= signers]
 
 -- | Exceptions
 data SigException

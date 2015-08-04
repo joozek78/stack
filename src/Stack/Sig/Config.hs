@@ -29,7 +29,7 @@ import qualified Data.Set as Set
 import           Data.Time ( formatTime, getCurrentTime )
 import qualified Data.Yaml as Y
 import           Stack.Sig.Defaults
-import           Stack.Sig.Types (SigException(..), Config(..), Signer(..))
+import           Stack.Types.Sig (SigException(..), SigConfig(..), Signer(..))
 import           System.Directory (renameFile, getHomeDirectory, doesFileExist,
                                    createDirectoryIfMissing)
 import           System.FilePath ( (</>) )
@@ -55,12 +55,12 @@ defaultSigners = [ Signer
                    , signerEmail = fromJust (emailAddress "tim@dysinger.net")
                    }]
 
-defaultConfig :: Config
-defaultConfig = Config defaultSigners
+defaultConfig :: SigConfig
+defaultConfig = SigConfig defaultSigners
 
 readConfig :: forall (m :: * -> *).
               (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
-              => m Config
+              => m SigConfig
 readConfig = do
     home <- liftIO getHomeDirectory
     let cfg = home </> configDir </> configFile
@@ -75,7 +75,7 @@ readConfig = do
 
 writeConfig :: forall (m :: * -> *).
               (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
-            => Config -> m ()
+            => SigConfig -> m ()
 writeConfig cfg = do
     home <- liftIO getHomeDirectory
     let configPath = home </> configDir </> configFile
@@ -112,7 +112,7 @@ writeConfig cfg = do
 
 writeConfigIfMissing :: forall (m :: * -> *).
                         (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
-                     => Config -> m ()
+                     => SigConfig -> m ()
 writeConfigIfMissing cfg = do
     home <- liftIO getHomeDirectory
     let configPath = home </> configDir </> configFile
@@ -122,7 +122,7 @@ writeConfigIfMissing cfg = do
 
 addSigner :: forall (m :: * -> *).
              (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadThrow m)
-          => Config -> Signer -> m ()
+          => SigConfig -> Signer -> m ()
 addSigner cfg signer = do
     writeConfig
         (cfg

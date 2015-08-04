@@ -43,8 +43,8 @@ import           Stack.Sig.Cabal (cabalFetch, cabalFilePackageId,
                                   packagesFromIndex, getPackageTarballPath)
 import qualified Stack.Sig.GPG as GPG
 import           Stack.Sig.Hackage
-import           Stack.Sig.Types
 import           Stack.Types.Config
+import           Stack.Types.Sig
 import           System.Directory (getDirectoryContents)
 import           System.Process (readProcessWithExitCode)
 

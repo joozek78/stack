@@ -35,7 +35,7 @@ import           Distribution.Package (PackageIdentifier(..))
 import           Stack.Sig.Cabal.Parse
 import           Stack.Sig.Defaults
 import           Stack.Sig.Mapping
-import           Stack.Sig.Types
+import           Stack.Types.Sig
 import           System.Directory.Parse (parseDirectory, filterDirectory)
 import           System.FilePath (splitFileName, splitExtension, (</>))
 

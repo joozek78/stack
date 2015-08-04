@@ -22,7 +22,7 @@ import Control.Monad.Trans.Control
 import Data.String (fromString)
 import Stack.Sig.Config
 import Stack.Sig.GPG
-import Stack.Sig.Types
+import Stack.Types.Sig
 import Text.Email.Validate (validate)
 
 trust :: forall (m :: * -> *).

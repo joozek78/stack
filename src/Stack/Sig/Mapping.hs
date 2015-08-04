@@ -23,7 +23,7 @@ import           Control.Monad.Trans.Control
 import qualified Data.ByteString as S
 import           Data.Monoid ((<>))
 import           Data.Yaml (decodeEither)
-import           Stack.Sig.Types (SigException(..), Mapping)
+import           Stack.Types.Sig (SigException(..), Mapping)
 
 -- | Try to read a mapping from the file. Throws an exception if it
 -- fails.

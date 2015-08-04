@@ -28,7 +28,7 @@ import           Data.Time (formatTime, getCurrentTime)
 import           Network.HTTP.Conduit (Response(responseBody),
                                        withManager, http, parseUrl)
 import           Stack.Sig.Defaults (configDir, archiveDir)
-import           Stack.Sig.Types
+import           Stack.Types.Sig
 import           System.Directory (renameDirectory,
                                    getTemporaryDirectory,
                                    getHomeDirectory,

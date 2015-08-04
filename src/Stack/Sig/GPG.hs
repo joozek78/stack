@@ -14,23 +14,23 @@ Portability : POSIX
 
 module Stack.Sig.GPG where
 
+import           Control.Applicative ((<$>))
 import           Control.Monad (unless)
 import           Control.Monad.Catch (MonadThrow, throwM)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Applicative ((<$>))
 import qualified Data.ByteString.Char8 as C
 import           Data.Foldable (forM_)
 import           Data.List (find)
 import           Data.Map (Map)
-import           Data.Monoid ((<>))
 import qualified Data.Map.Strict as M
+import           Data.Monoid ((<>))
 import qualified Data.Set as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Distribution.Package (PackageName(..), PackageIdentifier(..),
                                        packageName)
 import           Stack.Sig.Defaults
-import           Stack.Sig.Types
+import           Stack.Types.Sig
 import           System.Directory (doesFileExist)
 import           System.Exit (ExitCode(..))
 import           System.FilePath ((</>))
@@ -75,8 +75,8 @@ verifyPackage arch pkg@PackageIdentifier{..} path = do
 
 verifyMappings :: forall (m :: * -> *).
                   (Monad m, MonadIO m, MonadThrow m)
-               => Config -> Map Text Mapping -> FilePath -> m ()
-verifyMappings (Config signers) mappings dir = mapM_
+               => SigConfig -> Map Text Mapping -> FilePath -> m ()
+verifyMappings (SigConfig signers) mappings dir = mapM_
         (\(k,_v) ->
               verifyMapping
                   (dir </> mappingsDir </> T.unpack k <> ".yaml"))

@@ -43,7 +43,6 @@ import Stack.Sig.List as Sig
 import Stack.Sig.Mapping as Sig
 import Stack.Sig.Sign as Sig
 import Stack.Sig.Trust as Sig
-import Stack.Sig.Types as Sig
 import Stack.Sig.Update as Sig
 
 -- | The command name for dealing with signatures.

@@ -32,7 +32,7 @@ import           Stack.Sig.Config
 import           Stack.Sig.Defaults
 import           Stack.Sig.Display
 import           Stack.Sig.GPG
-import           Stack.Sig.Types
+import           Stack.Types.Sig
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
 

@@ -40,7 +40,7 @@ import           Distribution.PackageDescription (PackageDescription(..),
 import           Distribution.PackageDescription.Parse (readPackageDescription)
 import           Distribution.Text (Text(disp), simpleParse)
 import           Distribution.Verbosity (silent)
-import           Stack.Sig.Types
+import           Stack.Types.Sig
 import           System.Directory (doesFileExist, getAppUserDataDirectory)
 import           System.Exit (ExitCode(..))
 import           System.FilePath ((</>))
