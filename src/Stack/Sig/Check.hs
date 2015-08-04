@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 Module      : Stack.Sig.Check
@@ -15,26 +16,25 @@ Portability : POSIX
 
 module Stack.Sig.Check where
 
-import Control.Applicative
-import Control.Monad.Catch
-import Control.Monad.IO.Class
-import Control.Monad.Logger
-import Control.Monad.Trans.Control
-import Data.Foldable (forM_)
-import Data.List (intercalate)
-import Data.Monoid ((<>))
-import Data.Version (Version(..))
-import Distribution.Package
-       (PackageName(..), PackageIdentifier(..), packageVersion)
-import Stack.Sig.Archive (readArchive)
-import Stack.Sig.Cabal (cabalInstallDryRun, cabalFetch)
-import Stack.Sig.Config (readConfig)
-import Stack.Sig.Defaults (configDir, archiveDir)
-import Stack.Sig.Doc (putHeader, putPkgOK)
-import Stack.Sig.GPG (verifyPackage, verifyMappings)
-import Stack.Sig.Types (Archive(..))
-import System.Directory (getHomeDirectory)
-import System.FilePath ((</>))
+import           Control.Applicative
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
+import           Data.Foldable (forM_)
+import           Data.Monoid ((<>))
+import           Data.Version (showVersion)
+import           Distribution.Package (PackageName(..),
+                                       PackageIdentifier(..))
+import           Stack.Sig.Archive
+import           Stack.Sig.Cabal
+import           Stack.Sig.Config
+import           Stack.Sig.Defaults
+import           Stack.Sig.Display
+import           Stack.Sig.GPG
+import           Stack.Sig.Types
+import           System.Directory (getHomeDirectory)
+import           System.FilePath ((</>))
 
 check :: forall (m :: * -> *).
          (Applicative m, MonadCatch m, MonadBaseControl IO m, MonadIO m, MonadMask m, MonadLogger m, MonadThrow m)
@@ -48,22 +48,18 @@ check extraArgs pkg = do
         cfg
         (archiveMappings arch)
         archDir
-    putHeader "Verifying Packages"
+    $logInfo "Verifying Packages:"
     pkgs <- cabalInstallDryRun extraArgs pkg
     forM_
         pkgs
         (\p ->
               do cabalFetch [] p
                  let (PackageName name) = pkgName p
-                     version = intercalate
-                             "."
-                             (map
-                                  show
-                                  (versionBranch
-                                       (packageVersion p)))
+                     version = showVersion
+                             (pkgVersion p)
                      path = home </> ".cabal" </> "packages" </>
                          "hackage.haskell.org" </> name </> version </>
                          (name <> "-" <> version) <>
                          ".tar.gz"
-                 verifyPackage arch p path
-                 putPkgOK p)
+                 $logInfo (displayPackageIdentifier p)
+                 verifyPackage arch p path)

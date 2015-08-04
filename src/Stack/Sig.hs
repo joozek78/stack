@@ -36,7 +36,6 @@ import Stack.Sig.Cabal.Parse as Sig
 import Stack.Sig.Check as Sig
 import Stack.Sig.Config as Sig
 import Stack.Sig.Defaults as Sig
-import Stack.Sig.Doc as Sig
 import Stack.Sig.GPG as Sig
 import Stack.Sig.Hackage as Sig
 import Stack.Sig.Init as Sig

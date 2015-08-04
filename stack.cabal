@@ -88,7 +88,7 @@ library
                      Stack.Sig.Check
                      Stack.Sig.Config
                      Stack.Sig.Defaults
-                     Stack.Sig.Doc
+                     Stack.Sig.Display
                      Stack.Sig.GPG
                      Stack.Sig.Hackage
                      Stack.Sig.Init
@@ -185,7 +185,6 @@ library
                    , word8
                    , hastache
                    , project-template >= 0.2
-                   , ansi-wl-pprint
                    , email-validate >=2.0
                    , uuid
   if !os(windows)
