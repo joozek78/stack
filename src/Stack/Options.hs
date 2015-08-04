@@ -65,7 +65,7 @@ buildOptsParser cmd defCopyBins =
             optimize <*> haddock <*> haddockDeps <*> finalAction <*> dryRun <*> ghcOpts <*>
             flags <*> copyBins <*> preFetch <*>
             ((||) <$> onlySnapshot <*> onlyDependencies) <*>
-            fileWatch' <*> keepGoing <*> forceDirty
+            fileWatch' <*> keepGoing <*> forceDirty <*> verifySigs
   where optimize =
           maybeBoolFlags "optimizations" "optimizations for TARGETs and all its dependencies" idm
         target =
@@ -100,6 +100,11 @@ buildOptsParser cmd defCopyBins =
         copyBins = boolFlags defCopyBins
             "copy-bins"
             "copying binaries to the local-bin-path (see 'stack path')"
+            idm
+
+        verifySigs = boolFlags False
+            "verify-sigs"
+            "verify trusted GPG signatures of hackage packages"
             idm
 
         dryRun = flag False True (long "dry-run" <>

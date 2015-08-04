@@ -358,6 +358,8 @@ data BuildOpts =
             -- ^ Keep building/running after failure
             ,boptsForceDirty :: !Bool
             -- ^ Force treating all local packages as having dirty files
+            ,boptsVerifySigs :: !Bool
+            -- ^ Check all trusted GPG signatures of packages
             }
   deriving (Show)
 
@@ -379,6 +381,7 @@ defaultBuildOpts = BuildOpts
     , boptsFileWatch = False
     , boptsKeepGoing = Nothing
     , boptsForceDirty = False
+    , boptsVerifySigs = False
     }
 
 -- | Options for the 'FinalAction' 'DoTests'
