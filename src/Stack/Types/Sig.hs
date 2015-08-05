@@ -33,8 +33,9 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable)
-import           Distribution.Package (PackageName, PackageIdentifier)
-import           Stack.Sig.Cabal.Parse (parsePackageName)
+import           Stack.Types.PackageIdentifier
+import           Stack.Types.PackageName
+import           Stack.Types.Version
 import           Text.Email.Validate (EmailAddress, validate, toByteString)
 
 -- | A signature archive.

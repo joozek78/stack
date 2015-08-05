@@ -27,10 +27,8 @@ import           Data.Monoid ((<>))
 import qualified Data.Set as S
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Distribution.Package (PackageName(..), PackageIdentifier(..),
-                                       packageName)
 import           Stack.Sig.Defaults
-import           Stack.Types.Sig
+import           Stack.Types
 import           System.Directory (doesFileExist)
 import           System.Exit (ExitCode(..))
 import           System.FilePath ((</>))

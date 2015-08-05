@@ -20,10 +20,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Version (showVersion)
-import           Distribution.Package (PackageName(..),
-                                       PackageIdentifier(..))
 import           Distribution.Text (display)
-import           Stack.Types.Sig
+import           Stack.Types
 import           Text.Email.Validate (toByteString)
 
 displayPackageIdentifier :: PackageIdentifier -> Text

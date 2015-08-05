@@ -25,11 +25,10 @@ import Data.Aeson.TH (deriveFromJSON, defaultOptions)
 import Data.List.Split (splitOn)
 import Data.Maybe
 import Data.Monoid ((<>))
-import Distribution.Package (PackageIdentifier)
 import Distribution.Text (simpleParse)
 import Network.HTTP.Conduit
        (parseUrl, withManager, httpLbs, requestHeaders, responseBody)
-import Stack.Types.Sig (SigException(HackageAPIException))
+import Stack.Types
 
 data UserDetail = UserDetail
     { groups :: [String]

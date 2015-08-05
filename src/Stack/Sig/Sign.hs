@@ -31,8 +31,6 @@ import qualified Data.Text as T
 import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
 import           Data.Version (showVersion)
-import           Distribution.Package (PackageName(PackageName),
-                                       PackageIdentifier(..))
 import           Network.HTTP.Conduit (Response(..), RequestBody(..),
                                        Request(..), withManager,
                                        httpLbs, parseUrl)
@@ -43,8 +41,7 @@ import           Stack.Sig.Cabal (cabalFetch, cabalFilePackageId,
                                   packagesFromIndex, getPackageTarballPath)
 import qualified Stack.Sig.GPG as GPG
 import           Stack.Sig.Hackage
-import           Stack.Types.Config
-import           Stack.Types.Sig
+import           Stack.Types
 import           System.Directory (getDirectoryContents)
 import           System.Process (readProcessWithExitCode)
 

@@ -31,11 +31,9 @@ import qualified Data.Map.Strict as M
 import           Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Text as T
-import           Distribution.Package (PackageIdentifier(..))
-import           Stack.Sig.Cabal.Parse
 import           Stack.Sig.Defaults
 import           Stack.Sig.Mapping
-import           Stack.Types.Sig
+import           Stack.Types
 import           System.Directory.Parse (parseDirectory, filterDirectory)
 import           System.FilePath (splitFileName, splitExtension, (</>))
 

@@ -24,15 +24,13 @@ import           Control.Monad.Trans.Control
 import           Data.Foldable (forM_)
 import           Data.Monoid ((<>))
 import           Data.Version (showVersion)
-import           Distribution.Package (PackageName(..),
-                                       PackageIdentifier(..))
 import           Stack.Sig.Archive
 import           Stack.Sig.Cabal
 import           Stack.Sig.Config
 import           Stack.Sig.Defaults
 import           Stack.Sig.Display
 import           Stack.Sig.GPG
-import           Stack.Types.Sig
+import           Stack.Types
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
 

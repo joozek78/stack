@@ -32,7 +32,6 @@ module Stack.Sig
 import Options.Applicative
 import Stack.Sig.Archive as Sig
 import Stack.Sig.Cabal as Sig
-import Stack.Sig.Cabal.Parse as Sig
 import Stack.Sig.Check as Sig
 import Stack.Sig.Config as Sig
 import Stack.Sig.Defaults as Sig
