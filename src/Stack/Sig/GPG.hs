@@ -58,17 +58,16 @@ signPackage path = do
 verifyPackage :: forall (m :: * -> *).
                  (Monad m, MonadIO m, MonadThrow m)
               => Archive -> PackageIdentifier -> FilePath -> m ()
-verifyPackage arch pkg@PackageIdentifier{..} path = do
-    let (PackageName name) = packageName pkg
+verifyPackage arch pkg@(PackageIdentifier name _ver) path =
     case M.lookup pkg (archiveSignatures arch) of
         Nothing -> throwM
                 (GPGNoSignatureException
-                     ("no signature for package " <> name))
+                     ("no signature for package " <> show name))
         Just sigs
             | S.empty == sigs ->
                 throwM
                     (GPGNoSignatureException
-                         ("no signature for package " <> name))
+                         ("no signature for package " <> show name))
         Just sigs -> forM_ (S.toList sigs) (`verifyFile` path)
 
 verifyMappings :: forall (m :: * -> *).

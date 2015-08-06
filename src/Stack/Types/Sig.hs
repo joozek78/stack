@@ -24,6 +24,7 @@ import           Data.Aeson (Value(..), ToJSON(..), FromJSON(..), object, (.=), 
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as SB
 import           Data.Char (isDigit, isAlpha, isSpace)
+import           Data.Monoid ((<>))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Set (Set)
@@ -35,7 +36,7 @@ import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable)
 import           Stack.Types.PackageIdentifier
 import           Stack.Types.PackageName
-import           Stack.Types.Version
+-- -- -- import           Stack.Types.Version
 import           Text.Email.Validate (EmailAddress, validate, toByteString)
 
 -- | A signature archive.
@@ -137,9 +138,9 @@ instance IsString FingerprintSample where
 instance FromJSON (Aeson PackageName) where
     parseJSON j = do
         s <- parseJSON j
-        case parsePackageName s of
+        case (parsePackageName . T.encodeUtf8) s of
             Just name -> return (Aeson name)
-            Nothing -> fail ("Invalid package name: " ++ s)
+            Nothing -> fail ("Invalid package name: " <> T.unpack s)
 
 instance FromJSON (Aeson EmailAddress) where
     parseJSON j = do

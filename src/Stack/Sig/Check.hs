@@ -47,17 +47,17 @@ check extraArgs pkg = do
         (archiveMappings arch)
         archDir
     $logInfo "Verifying Packages:"
-    pkgs <- cabalInstallDryRun extraArgs pkg
-    forM_
-        pkgs
-        (\p ->
-              do cabalFetch [] p
-                 let (PackageName name) = pkgName p
-                     version = showVersion
-                             (pkgVersion p)
-                     path = home </> ".cabal" </> "packages" </>
-                         "hackage.haskell.org" </> name </> version </>
-                         (name <> "-" <> version) <>
-                         ".tar.gz"
-                 $logInfo (displayPackageIdentifier p)
-                 verifyPackage arch p path)
+    -- pkgs <- cabalInstallDryRun extraArgs pkg
+    -- forM_
+    --     pkgs
+    --     (\p ->
+    --           do cabalFetch [] p
+    --              let (PackageName name) = pkgName p
+    --                  version = showVersion
+    --                          (pkgVersion p)
+    --                  path = home </> ".cabal" </> "packages" </>
+    --                      "hackage.haskell.org" </> name </> version </>
+    --                      (name <> "-" <> version) <>
+    --                      ".tar.gz"
+    --              $logInfo (displayPackageIdentifier p)
+    --              verifyPackage arch p path)

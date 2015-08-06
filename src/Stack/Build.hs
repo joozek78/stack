@@ -48,6 +48,26 @@ import           Stack.Types
 import           Stack.Types.Internal
 import           System.FileLock (FileLock, unlockFile)
 
+import           Control.Applicative
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Control
+import           Data.List
+import           Data.Monoid ((<>))
+import           Data.Version (showVersion)
+import           Data.Text                      (Text)
+import qualified Data.Text                      as T
+import           Stack.Sig.Archive
+import           Stack.Sig.Cabal
+import           Stack.Sig.Config
+import           Stack.Sig.Defaults
+import           Stack.Sig.Display
+import           Stack.Sig.GPG
+import           Stack.Types.Sig
+import           System.Directory (getHomeDirectory)
+import qualified System.FilePath as FP
+
 type M env m = (MonadIO m,MonadReader env m,HasHttpManager env,HasBuildConfig env,MonadLogger m,MonadBaseControl IO m,MonadCatch m,MonadMask m,HasLogLevel env,HasEnvConfig env,HasTerminal env)
 
 -- | Build.
@@ -96,11 +116,42 @@ build setLocalFiles mbuildLk bopts = do
     when (boptsPreFetch bopts) $
         preFetch plan
 
+    $logInfo "start verify sigs"
+    when (boptsVerifySigs bopts)
+      (do cfg <- readConfig
+          home <- liftIO getHomeDirectory
+          let archDir = home FP.</> configDir FP.</> archiveDir
+          arch <- readArchive archDir
+          verifyMappings
+            cfg
+            (archiveMappings arch)
+            archDir
+          verify arch plan)
+    $logInfo "done verify sigs"
+
     if boptsDryrun bopts
         then printPlan (boptsFinalAction bopts) plan
         else executePlan menv bopts baseConfigOpts locals sourceMap plan
   where
     profiling = boptsLibProfile bopts || boptsExeProfile bopts
+    verify arch plan
+      | Set.null (idents plan) = $logDebug "Nothing to verify"
+      | otherwise = do
+          let packages = (Set.toList . idents) plan
+          $logInfo (T.pack ("Verifying: " ++
+                             intercalate ", "
+                             (map packageIdentifierString packages)))
+          -- TODO calculate path to package file
+          -- forM_ packages (\p -> verifyPackage arch p )
+    idents = Set.unions . map toIdent . Map.toList . planTasks
+    toIdent (name, task) =
+        case taskType task of
+            TTLocal package -> Set.singleton (PackageIdentifier
+                                              name
+                                              ((packageVersion . lpPackage) package))
+            TTUpstream package _ -> Set.singleton $ PackageIdentifier
+                name
+                (packageVersion package)
 
 -- | If all the tasks are local, they don't mutate anything outside of our local directory.
 allLocal :: Plan -> Bool

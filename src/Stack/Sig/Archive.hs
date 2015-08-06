@@ -24,6 +24,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Control
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as BC
 import           Data.List (isSuffixOf)
 import           Data.List.Split (splitOn)
 import           Data.Map.Strict (Map)
@@ -70,13 +71,13 @@ readSignatures :: forall (m :: * -> *).
                => FilePath -> m (Map PackageIdentifier (Set Signature))
 readSignatures dir = do
     packageNames <-
-        liftIO (parseDirectory dir parsePackageName)
+        liftIO (parseDirectory dir (parsePackageName . BC.pack))
     fmap
         (M.fromList . concat)
         (mapM
              (\(pkgDir,name) ->
                    do versions <-
-                          liftIO (parseDirectory pkgDir parseVersion)
+                          liftIO (parseDirectory pkgDir (parseVersion . BC.pack))
                       versionSignatures <-
                           mapM
                               (\(verDir,ver) ->

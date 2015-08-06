@@ -16,19 +16,18 @@ Portability : POSIX
 
 module Stack.Sig.Hackage where
 
-import Control.Applicative ((<$>))
-import Control.Monad.Catch (MonadThrow, throwM)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Aeson (eitherDecode)
-import Data.Aeson.TH (deriveFromJSON, defaultOptions)
-import Data.List.Split (splitOn)
-import Data.Maybe
-import Data.Monoid ((<>))
-import Distribution.Text (simpleParse)
-import Network.HTTP.Conduit
-       (parseUrl, withManager, httpLbs, requestHeaders, responseBody)
-import Stack.Types
+import           Control.Applicative ((<$>))
+import           Control.Monad.Catch (MonadThrow, throwM)
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.Trans.Control (MonadBaseControl)
+import           Data.Aeson (eitherDecode)
+import           Data.Aeson.TH (deriveFromJSON, defaultOptions)
+import           Data.List.Split (splitOn)
+import           Data.Maybe
+import           Data.Monoid ((<>))
+import           Network.HTTP.Conduit
+                 (parseUrl, withManager, httpLbs, requestHeaders, responseBody)
+import           Stack.Types
 
 data UserDetail = UserDetail
     { groups :: [String]
@@ -62,5 +61,5 @@ packageNamesForUser :: UserDetail -> [PackageIdentifier]
 packageNamesForUser = mapMaybe packageNameFromGroup . groups
   where
     packageNameFromGroup grp = case filter ("" /=) (splitOn "/" grp) of
-            ["package",pkg,"maintainers"] -> simpleParse pkg
+            [_,pkg,_] -> parsePackageIdentifierFromString pkg
             _ -> Nothing

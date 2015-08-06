@@ -37,8 +37,7 @@ import           Network.HTTP.Conduit (Response(..), RequestBody(..),
 import           Network.HTTP.Types (status200, methodPut)
 import           Path
 import           Path.IO
-import           Stack.Sig.Cabal (cabalFetch, cabalFilePackageId,
-                                  packagesFromIndex, getPackageTarballPath)
+import           Stack.Sig.Cabal
 import qualified Stack.Sig.GPG as GPG
 import           Stack.Sig.Hackage
 import           Stack.Types
@@ -119,9 +118,9 @@ signAll url uname = do
     fromIndex <- packagesFromIndex
     forM_
         (filter
-             (\x ->
-                   pkgName x `elem`
-                   map pkgName fromHackage)
+             (\name ->
+                   show name `elem`
+                   map (\(PackageIdentifier name _ver) -> show name) fromHackage)
              fromIndex)
         (\pkg ->
               do cabalFetch
@@ -136,9 +135,9 @@ signPackage :: forall (m :: * -> *).
 signPackage url pkg filePath = do
     $logInfo ("GPG signing " <> T.pack filePath)
     sig@(Signature signature) <- GPG.signPackage filePath
-    let (PackageName name) = pkgName pkg
-        version = showVersion
-                (pkgVersion pkg)
+    let (PackageIdentifier n v) = pkg
+        name = show n
+        version = show v
     fingerprint <-
         GPG.verifyFile sig filePath >>=
         GPG.fullFingerprint

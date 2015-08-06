@@ -19,18 +19,16 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import           Data.Version (showVersion)
-import           Distribution.Text (display)
+-- import           Data.Version (showVersion)
+-- import           Distribution.Text (display)
 import           Stack.Types
 import           Text.Email.Validate (toByteString)
 
 displayPackageIdentifier :: PackageIdentifier -> Text
-displayPackageIdentifier PackageIdentifier{..} = displayPackageName pkgName <>
-    "-" <>
-    (T.pack . showVersion) pkgVersion
+displayPackageIdentifier = packageIdentifierText
 
 displayPackageName :: PackageName -> Text
-displayPackageName = T.pack . display
+displayPackageName = T.pack . show
 
 displaySigner :: Signer -> Text
 displaySigner Signer{..} = (T.decodeUtf8 . toByteString) signerEmail <>
