@@ -60,7 +60,7 @@ build :: M env m
       -> Maybe FileLock
       -> BuildOpts
       -> m ()
-build setLocalFiles mbuildLk bopts = do
+build setLocalFiles mbuildLk bopts = errorWhenUnsupported bopts $ do
     menv <- getMinimalEnvOverride
 
     (mbp, locals, extraToBuild, sourceMap) <- loadSourceMap bopts
@@ -152,6 +152,7 @@ withLoadPackage menv inner = do
         , packageConfigFlags = flags
         , packageConfigGhcVersion = envConfigGhcVersion econfig
         , packageConfigPlatform = configPlatform (getConfig econfig)
+        , packageConfigUseGHCJS = configUseGHCJS (getConfig econfig)
         }
 
 -- | Reset the build (remove Shake database and .gen files).
@@ -161,3 +162,10 @@ clean = do
     forM_
         (Map.keys (envConfigPackages econfig))
         (distDirFromDir >=> removeTreeIfExists)
+
+errorWhenUnsupported :: M env m => BuildOpts -> m () -> m ()
+errorWhenUnsupported bopts inner = do
+    useGHCJS <- asks (configUseGHCJS . getConfig)
+    if (useGHCJS == UseGHCJS) && (boptsTests bopts || boptsBenchmarks bopts)
+         then $logError "This version of stack was built with a version of Cabal "
+         else inner

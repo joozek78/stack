@@ -557,6 +557,9 @@ configureOpts econfig bco deps wanted loc package = map T.pack $ concat
         else []
     , map (("--extra-include-dirs=" ++) . T.unpack) (Set.toList (configExtraIncludeDirs config))
     , map (("--extra-lib-dirs=" ++) . T.unpack) (Set.toList (configExtraLibDirs config))
+    , if configUseGHCJS config == UseGHCJS
+        then ["--ghcjs"]
+        else []
     ]
   where
     config = getConfig econfig

@@ -60,22 +60,23 @@ shouldHaddockDeps bopts = fromMaybe (boptsHaddock bopts) (boptsHaddockDeps bopts
 -- available where viewing the docs (e.g. if building in a Docker container).
 copyDepHaddocks :: (MonadIO m, MonadLogger m, MonadThrow m, MonadCatch m, MonadBaseControl IO m)
                 => EnvOverride
+                -> UseGHCJS
                 -> BaseConfigOpts
                 -> [Path Abs Dir]
                 -> PackageIdentifier
                 -> Set (Path Abs Dir)
                 -> m ()
-copyDepHaddocks envOverride bco pkgDbs pkgId extraDestDirs = do
-    mpkgHtmlDir <- findGhcPkgHaddockHtml envOverride pkgDbs pkgId
+copyDepHaddocks envOverride useGHCJS bco pkgDbs pkgId extraDestDirs = do
+    mpkgHtmlDir <- findGhcPkgHaddockHtml envOverride useGHCJS pkgDbs pkgId
     case mpkgHtmlDir of
         Nothing -> return ()
         Just pkgHtmlDir -> do
-            depGhcIds <- findGhcPkgDepends envOverride pkgDbs pkgId
+            depGhcIds <- findGhcPkgDepends envOverride useGHCJS pkgDbs pkgId
             forM_ (map ghcPkgIdPackageIdentifier depGhcIds) $
                 copyDepWhenNeeded pkgHtmlDir
   where
     copyDepWhenNeeded pkgHtmlDir depId = do
-        mDepOrigDir <- findGhcPkgHaddockHtml envOverride pkgDbs depId
+        mDepOrigDir <- findGhcPkgHaddockHtml envOverride useGHCJS pkgDbs depId
         case mDepOrigDir of
             Nothing -> return ()
             Just depOrigDir -> do
@@ -97,7 +98,7 @@ copyDepHaddocks envOverride bco pkgDbs pkgId extraDestDirs = do
                     when needCopy $ doCopy depOrigDir depCopyDir
                     return needCopy
         when (or copied) $
-            copyDepHaddocks envOverride bco pkgDbs depId destDirs
+            copyDepHaddocks envOverride useGHCJS bco pkgDbs depId destDirs
     getNeedCopy depOrigDir depCopyDir = do
         let depOrigIndex = haddockIndexFile depOrigDir
             depCopyIndex = haddockIndexFile depCopyDir
@@ -135,13 +136,14 @@ generateLocalHaddockIndex envOverride bco locals = do
 -- | Generate Haddock index and contents for local packages and their dependencies.
 generateDepsHaddockIndex
     :: (MonadIO m, MonadCatch m, MonadThrow m, MonadLogger m, MonadBaseControl IO m)
-    => EnvOverride -> BaseConfigOpts -> [LocalPackage] -> m ()
-generateDepsHaddockIndex envOverride bco locals = do
+    => EnvOverride -> UseGHCJS -> BaseConfigOpts -> [LocalPackage] -> m ()
+generateDepsHaddockIndex envOverride useGHCJS bco locals = do
     depSets <-
         mapM
             (\LocalPackage{lpPackage = Package{..}} ->
                   findTransitiveGhcPkgDepends
                       envOverride
+                      useGHCJS
                       [bcoSnapDB bco, bcoLocalDB bco]
                       (PackageIdentifier packageName packageVersion))
             locals
@@ -155,9 +157,9 @@ generateDepsHaddockIndex envOverride bco locals = do
 -- | Generate Haddock index and contents for all snapshot packages.
 generateSnapHaddockIndex
     :: (MonadIO m, MonadCatch m, MonadThrow m, MonadLogger m, MonadBaseControl IO m)
-    => EnvOverride -> BaseConfigOpts -> Path Abs Dir -> m ()
-generateSnapHaddockIndex envOverride bco globalDB = do
-    pkgIds <- listGhcPkgDbs envOverride [globalDB, bcoSnapDB bco]
+    => EnvOverride -> UseGHCJS -> BaseConfigOpts -> Path Abs Dir -> m ()
+generateSnapHaddockIndex envOverride useGHCJS bco globalDB = do
+    pkgIds <- listGhcPkgDbs envOverride useGHCJS [globalDB, bcoSnapDB bco]
     generateHaddockIndex
         "snapshot packages"
         envOverride

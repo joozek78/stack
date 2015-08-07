@@ -127,6 +127,7 @@ data PackageConfig =
                 ,packageConfigFlags :: !(Map FlagName Bool)   -- ^ Package config flags.
                 ,packageConfigGhcVersion :: !Version      -- ^ GHC version
                 ,packageConfigPlatform :: !Platform       -- ^ host platform
+                ,packageConfigUseGHCJS :: !UseGHCJS       -- ^ Whether to use GHCJS
                 }
  deriving (Show,Typeable)
 

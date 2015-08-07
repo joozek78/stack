@@ -79,12 +79,13 @@ instance NFData InstalledCacheEntry where
 ghcPkgDump
     :: (MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m, MonadThrow m)
     => EnvOverride
+    -> UseGHCJS
     -> Maybe (Path Abs Dir) -- ^ if Nothing, use global
     -> Sink ByteString IO a
     -> m a
-ghcPkgDump menv mpkgDb sink = do
-    F.mapM_ (createDatabase menv) mpkgDb -- TODO maybe use some retry logic instead?
-    a <- sinkProcessStdout Nothing menv "ghc-pkg" args sink
+ghcPkgDump menv useGHCJS mpkgDb sink = do
+    F.mapM_ (createDatabase menv useGHCJS) mpkgDb -- TODO maybe use some retry logic instead?
+    a <- sinkProcessStdout Nothing menv (ghcPkgExeName useGHCJS) args sink
     return a
   where
     args = concat

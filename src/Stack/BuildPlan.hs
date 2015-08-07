@@ -255,7 +255,7 @@ addDeps :: (MonadIO m, MonadLogger m, MonadReader env m, HasHttpManager env, Mon
         -> m (Map PackageName MiniPackageInfo, Set PackageIdentifier)
 addDeps allowMissing ghcVersion toCalc = do
     menv <- getMinimalEnvOverride
-    platform <- asks $ configPlatform . getConfig
+    config <- asks getConfig
     (resolvedMap, missingIdents) <-
         if allowMissing
             then do
@@ -281,7 +281,8 @@ addDeps allowMissing ghcVersion toCalc = do
                     , packageConfigEnableBenchmarks = False
                     , packageConfigFlags = flags
                     , packageConfigGhcVersion = ghcVersion
-                    , packageConfigPlatform = platform
+                    , packageConfigPlatform = configPlatform config
+                    , packageConfigUseGHCJS = configUseGHCJS config
                     }
                 name = packageIdentifierName ident
                 pd = resolvePackageDescription packageConfig gpd
@@ -508,17 +509,18 @@ checkBuildPlan :: (MonadLogger m, MonadThrow m, MonadIO m, MonadReader env m, Ha
                -> m (Either DepErrors (Map PackageName (Map FlagName Bool)))
 checkBuildPlan locals mbp gpd = do
     platform <- asks (configPlatform . getConfig)
-    return $ loop platform flagOptions
+    useGHCJS <- asks (configUseGHCJS . getConfig)
+    return $ loop platform useGHCJS flagOptions
   where
     packages = Map.union locals $ fmap mpiVersion $ mbpPackages mbp
-    loop _ [] = assert False $ Left Map.empty
-    loop platform (flags:rest)
+    loop _ _ [] = assert False $ Left Map.empty
+    loop platform useGHCJS (flags:rest)
         | Map.null errs = Right $
             if Map.null flags
                 then Map.empty
                 else Map.singleton (packageName pkg) flags
         | null rest = Left errs
-        | otherwise = loop platform rest
+        | otherwise = loop platform useGHCJS rest
       where
         errs = checkDeps (packageName pkg) (packageDeps pkg) packages
         pkg = resolvePackage pkgConfig gpd
@@ -528,6 +530,7 @@ checkBuildPlan locals mbp gpd = do
             , packageConfigFlags = flags
             , packageConfigGhcVersion = ghcVersion
             , packageConfigPlatform = platform
+            , packageConfigUseGHCJS = useGHCJS
             }
 
     ghcVersion = mbpGhcVersion mbp

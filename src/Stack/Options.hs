@@ -200,7 +200,7 @@ readFlag = do
 -- | Command-line arguments parser for configuration.
 configOptsParser :: Bool -> Parser ConfigMonoid
 configOptsParser docker =
-    (\opts systemGHC installGHC arch os jobs includes libs skipGHCCheck skipMsys localBin -> mempty
+    (\opts systemGHC installGHC arch os jobs includes libs skipGHCCheck useGHCJS skipMsys localBin -> mempty
         { configMonoidDockerOpts = opts
         , configMonoidSystemGHC = systemGHC
         , configMonoidInstallGHC = installGHC
@@ -210,6 +210,7 @@ configOptsParser docker =
         , configMonoidJobs = jobs
         , configMonoidExtraIncludeDirs = includes
         , configMonoidExtraLibDirs = libs
+        , configMonoidUseGHCJS = useGHCJS
         , configMonoidSkipMsys = skipMsys
         , configMonoidLocalBinPath = localBin
         })
@@ -251,6 +252,13 @@ configOptsParser docker =
     <*> maybeBoolFlags
             "skip-ghc-check"
             "skipping the GHC version and architecture check"
+            idm
+    <*> enableDisableFlags
+            Nothing
+            (Just UseGHCJS)
+            (Just UseGHC)
+            "use-ghcjs"
+            "using GHCJS to build packages"
             idm
     <*> maybeBoolFlags
             "skip-msys"

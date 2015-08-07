@@ -210,7 +210,7 @@ withExecuteEnv menv bopts baseConfigOpts locals sourceMap inner = do
         let setupHs = tmpdir' </> $(mkRelFile "Setup.hs")
         liftIO $ writeFile (toFilePath setupHs) "import Distribution.Simple\nmain = defaultMain"
         cabalPkgVer <- asks (envConfigCabalVersion . getEnvConfig)
-        globalDB <- getGlobalDB menv
+        globalDB <- getGlobalDB menv =<< asks (configUseGHCJS . getConfig)
         inner ExecuteEnv
             { eeEnvOverride = menv
             , eeBuildOpts = bopts
@@ -326,6 +326,7 @@ executePlan' :: M env m
              -> ExecuteEnv
              -> m ()
 executePlan' plan ee@ExecuteEnv {..} = do
+    useGHCJS <- asks (configUseGHCJS . getConfig)
     case Map.toList $ planUnregisterLocal plan of
         [] -> return ()
         ids -> do
@@ -337,7 +338,7 @@ executePlan' plan ee@ExecuteEnv {..} = do
                     , reason
                     , ")"
                     ]
-                unregisterGhcPkgId eeEnvOverride localDB id'
+                unregisterGhcPkgId eeEnvOverride useGHCJS localDB id'
 
     -- Yes, we're explicitly discarding result values, which in general would
     -- be bad. monad-unlift does this all properly at the type system level,
@@ -384,8 +385,8 @@ executePlan' plan ee@ExecuteEnv {..} = do
     unless (null errs) $ throwM $ ExecutionFailure errs
     when (boptsHaddock eeBuildOpts) $ do
         generateLocalHaddockIndex eeEnvOverride eeBaseConfigOpts eeLocals
-        generateDepsHaddockIndex eeEnvOverride eeBaseConfigOpts eeLocals
-        generateSnapHaddockIndex eeEnvOverride eeBaseConfigOpts eeGlobalDB
+        generateDepsHaddockIndex eeEnvOverride useGHCJS eeBaseConfigOpts eeLocals
+        generateSnapHaddockIndex eeEnvOverride useGHCJS eeBaseConfigOpts eeGlobalDB
     when (toCoverage $ boptsTestOpts eeBuildOpts) generateHpcMarkupIndex
 
 toActions :: M env m
@@ -476,6 +477,7 @@ ensureConfig pkgDir ExecuteEnv {..} Task {..} announce cabal cabalfp extra = do
     when needConfig $ withMVar eeConfigureLock $ \_ -> do
         deleteCaches pkgDir
         announce
+        config <- asks getConfig
         cabal False $ "configure" : map T.unpack configOpts
         writeConfigCache pkgDir newConfigCache
         writeCabalMod pkgDir newCabalMod
@@ -686,14 +688,15 @@ singleBuild ac@ActionContext {..} ee@ExecuteEnv {..} task@Task {..} =
         announce "install"
         cabal False ["install"]
 
-    let pkgDbs =
+    let useGHCJS = configUseGHCJS config
+        pkgDbs =
             case taskLocation task of
                 Snap -> [bcoSnapDB eeBaseConfigOpts]
                 Local ->
                     [ bcoSnapDB eeBaseConfigOpts
                     , bcoLocalDB eeBaseConfigOpts
                     ]
-    mpkgid <- findGhcPkgId eeEnvOverride pkgDbs (packageName package)
+    mpkgid <- findGhcPkgId eeEnvOverride useGHCJS pkgDbs (packageName package)
     mpkgid' <- case (packageHasLibrary package, mpkgid) of
         (False, _) -> assert (isNothing mpkgid) $ do
             markExeInstalled (taskLocation task) taskProvides -- TODO unify somehow with writeFlagCache?
@@ -709,6 +712,7 @@ singleBuild ac@ActionContext {..} ee@ExecuteEnv {..} task@Task {..} =
         withMVar eeInstallLock $ \() ->
             copyDepHaddocks
                 eeEnvOverride
+                useGHCJS
                 eeBaseConfigOpts
                 (pkgDbs ++ [eeGlobalDB])
                 (PackageIdentifier (packageName package) (packageVersion package))

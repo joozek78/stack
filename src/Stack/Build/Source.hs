@@ -217,6 +217,7 @@ loadLocalPackage bopts targets (name, (lpv, gpkg)) = do
             , packageConfigFlags = localFlags (boptsFlags bopts) bconfig name
             , packageConfigGhcVersion = envConfigGhcVersion econfig
             , packageConfigPlatform = configPlatform $ getConfig bconfig
+            , packageConfigUseGHCJS = configUseGHCJS $ getConfig bconfig
             }
         btconfig = config
             { packageConfigEnableTests = not $ Set.null tests

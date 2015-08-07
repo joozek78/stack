@@ -160,7 +160,7 @@ setupEnv = do
 
     menv <- mkEnvOverride platform env
     ghcVer <- getGhcVersion menv
-    cabalVer <- getCabalPkgVer menv
+    cabalVer <- getCabalPkgVer menv UseGHC
     packages <- mapM
         (resolvePackageEntry menv (bcRoot bconfig))
         (bcPackageEntries bconfig)
@@ -179,10 +179,10 @@ setupEnv = do
         localsPath = augmentPath (mkDirs' True) mpath
 
     deps <- runReaderT packageDatabaseDeps envConfig0
-    createDatabase menv deps
+    createDatabase menv UseGHC deps
     localdb <- runReaderT packageDatabaseLocal envConfig0
-    createDatabase menv localdb
-    globalDB <- getGlobalDB menv
+    createDatabase menv UseGHC localdb
+    globalDB <- getGlobalDB menv UseGHC
     let mkGPP locals = T.pack $ intercalate [searchPathSeparator] $ concat
             [ [toFilePathNoTrailingSlash localdb | locals]
             , [toFilePathNoTrailingSlash deps]
@@ -350,7 +350,7 @@ upgradeCabal menv = do
             [PackageIdentifier name' version]
                 | name == name' -> return version
             x -> error $ "Unexpected results for resolvePackages: " ++ show x
-    installed <- getCabalPkgVer menv
+    installed <- getCabalPkgVer menv UseGHC
     if installed >= newest
         then $logInfo $ T.concat
             [ "Currently installed Cabal is "

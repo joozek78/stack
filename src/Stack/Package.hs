@@ -8,6 +8,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE CPP #-}
 
 -- | Dealing with Cabal.
 
@@ -535,6 +536,7 @@ resolvePackageDescription packageConfig (GenericPackageDescription desc defaultF
         rc = mkResolveConditions
                 (packageConfigGhcVersion packageConfig)
                 (packageConfigPlatform packageConfig)
+                (packageConfigUseGHCJS packageConfig)
                 flags
 
         updateLibDeps lib deps =
@@ -564,6 +566,7 @@ flagMap = M.fromList . map pair
 data ResolveConditions = ResolveConditions
     { rcFlags :: Map FlagName Bool
     , rcGhcVersion :: Version
+    , rcUseGHCJS :: UseGHCJS
     , rcOS :: OS
     , rcArch :: Arch
     }
@@ -571,11 +574,13 @@ data ResolveConditions = ResolveConditions
 -- | Generic a @ResolveConditions@ using sensible defaults.
 mkResolveConditions :: Version -- ^ GHC version
                     -> Platform -- ^ installation target platform
+                    -> UseGHCJS -- ^ whether ghcjs is being used
                     -> Map FlagName Bool -- ^ enabled flags
                     -> ResolveConditions
-mkResolveConditions ghcVersion (Platform arch os) flags = ResolveConditions
+mkResolveConditions ghcVersion (Platform arch os) useGHCJS flags = ResolveConditions
     { rcFlags = flags
     , rcGhcVersion = ghcVersion
+    , rcUseGHCJS = useGHCJS
     , rcOS = if isWindows os then Windows else os
     , rcArch = arch
     }
@@ -615,9 +620,19 @@ resolveConditions rc addDeps (CondNode lib deps cs) = basic <> children
                                 -- which are used must be declared. Defaulting
                                 -- to False
                                 False
-                    Impl flavor range ->
-                        flavor == GHC &&
-                        withinRange (rcGhcVersion rc) range
+                    Impl flavor range
+                        | rcUseGHCJS rc == UseGHCJS ->
+                             -- FIXME: Do impl ranges for ghcjs refer to ghc
+                             -- version numbers or ghcjs version numbers?
+#if MIN_VERSION_Cabal(1, 22, 0)
+                             flavor == GHCJS &&
+#else
+                             flavor == OtherCompiler "ghcjs" &&
+#endif
+                             withinRange (rcGhcVersion rc) range
+                        | otherwise ->
+                             flavor == GHC &&
+                             withinRange (rcGhcVersion rc) range
 
 -- | Get the name of a dependency.
 depName :: Dependency -> PackageName
@@ -809,9 +824,9 @@ logPossibilities dirs mn = do
                  T.pack (display mn) <>
                  "\", but did find: " <>
                  T.intercalate ", " (map (T.pack . toFilePath) possibilities) <>
-                 ". If you are using a custom preprocessor for this module \
-                 \with its own file extension, consider adding the file(s) \
-                 \to your .cabal under extra-source-files.")
+                 ". If you are using a custom preprocessor for this module " <>
+                 "with its own file extension, consider adding the file(s) " <>
+                 "to your .cabal under extra-source-files.")
   where
     makePossibilities name =
         mapM

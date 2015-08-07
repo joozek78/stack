@@ -102,6 +102,8 @@ ghciSetup targets = do
                         , packageConfigGhcVersion = envConfigGhcVersion econfig
                         , packageConfigPlatform = configPlatform
                               (getConfig bconfig)
+                        , packageConfigUseGHCJS = configUseGHCJS
+                              (getConfig bconfig)
                         }
                 pkg <- readPackage config cabalfp
                 pkgOpts <-

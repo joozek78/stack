@@ -97,6 +97,8 @@ data Config =
          -- version is available? Can be overridden by command line options.
          ,configSkipGHCCheck        :: !Bool
          -- ^ Don't bother checking the GHC version or architecture.
+         ,configUseGHCJS            :: !UseGHCJS
+         -- ^ Build with GHCJS
          ,configSkipMsys            :: !Bool
          -- ^ On Windows: don't use a locally installed MSYS
          ,configLocalBin            :: !(Path Abs Dir)
@@ -490,6 +492,8 @@ data ConfigMonoid =
     -- ^ See: 'configInstallGHC'
     ,configMonoidSkipGHCCheck        :: !(Maybe Bool)
     -- ^ See: 'configSkipGHCCheck'
+    ,configMonoidUseGHCJS            :: !(Maybe UseGHCJS)
+    -- ^ See: 'configUseGHCJS
     ,configMonoidSkipMsys            :: !(Maybe Bool)
     -- ^ See: 'configSkipMsys'
     ,configMonoidRequireStackVersion :: !VersionRange
@@ -527,6 +531,7 @@ instance Monoid ConfigMonoid where
     , configMonoidSystemGHC = Nothing
     , configMonoidInstallGHC = Nothing
     , configMonoidSkipGHCCheck = Nothing
+    , configMonoidUseGHCJS = Nothing
     , configMonoidSkipMsys = Nothing
     , configMonoidRequireStackVersion = anyVersion
     , configMonoidOS = Nothing
@@ -549,6 +554,7 @@ instance Monoid ConfigMonoid where
     , configMonoidSystemGHC = configMonoidSystemGHC l <|> configMonoidSystemGHC r
     , configMonoidInstallGHC = configMonoidInstallGHC l <|> configMonoidInstallGHC r
     , configMonoidSkipGHCCheck = configMonoidSkipGHCCheck l <|> configMonoidSkipGHCCheck r
+    , configMonoidUseGHCJS = configMonoidUseGHCJS l <|> configMonoidUseGHCJS r
     , configMonoidSkipMsys = configMonoidSkipMsys l <|> configMonoidSkipMsys r
     , configMonoidRequireStackVersion = intersectVersionRanges (configMonoidRequireStackVersion l)
                                                                (configMonoidRequireStackVersion r)
@@ -580,6 +586,7 @@ parseConfigMonoidJSON obj = do
     configMonoidSystemGHC <- obj ..:? "system-ghc"
     configMonoidInstallGHC <- obj ..:? "install-ghc"
     configMonoidSkipGHCCheck <- obj ..:? "skip-ghc-check"
+    configMonoidUseGHCJS <- obj ..:? "use-ghcjs"
     configMonoidSkipMsys <- obj ..:? "skip-msys"
     configMonoidRequireStackVersion <- unVersionRangeJSON <$>
                                        obj ..:? "require-stack-version"
@@ -748,20 +755,25 @@ installationRootDeps :: (MonadThrow m, MonadReader env m, HasEnvConfig env) => m
 installationRootDeps = do
     snapshots <- snapshotsDir
     bc <- asks getBuildConfig
-    ec <- asks getEnvConfig
     name <- parseRelDir $ T.unpack $ resolverName $ bcResolver bc
-    ghc <- parseRelDir $ versionString $ envConfigGhcVersion ec
+    ghc <- parseRelDir =<< ghcVersionName
     return $ snapshots </> name </> ghc
 
 -- | Installation root for locals
 installationRootLocal :: (MonadThrow m, MonadReader env m, HasEnvConfig env) => m (Path Abs Dir)
 installationRootLocal = do
     bc <- asks getBuildConfig
-    ec <- asks getEnvConfig
     name <- parseRelDir $ T.unpack $ resolverName $ bcResolver bc
-    ghc <- parseRelDir $ versionString $ envConfigGhcVersion ec
+    ghc <- parseRelDir =<< ghcVersionName
     platform <- platformRelDir
     return $ configProjectWorkDir bc </> $(mkRelDir "install") </> platform </> name </> ghc
+
+-- FIXME: Is there a better way to disambiguate ghcjs paths?
+ghcVersionName  :: (MonadThrow m, MonadReader env m, HasEnvConfig env) => m String
+ghcVersionName = do
+    useGHCJS <- asks (configUseGHCJS . getConfig)
+    version <- asks (versionString . envConfigGhcVersion . getEnvConfig)
+    return $ version ++ if useGHCJS == UseGHCJS then "-ghcjs" else ""
 
 -- | Package database for installing dependencies into
 packageDatabaseDeps :: (MonadThrow m, MonadReader env m, HasEnvConfig env) => m (Path Abs Dir)
@@ -889,3 +901,16 @@ instance FromJSON SCM where
 
 instance ToJSON SCM where
     toJSON Git = toJSON ("git" :: Text)
+
+-- | Whether to use GHCJS.
+data UseGHCJS = UseGHC | UseGHCJS
+  deriving (Eq, Show)
+
+instance FromJSON UseGHCJS where
+    parseJSON v = do
+        b <- parseJSON v
+        return $ if b then UseGHCJS else UseGHC
+
+instance ToJSON UseGHCJS where
+    toJSON UseGHCJS = toJSON True
+    toJSON UseGHC   = toJSON False
