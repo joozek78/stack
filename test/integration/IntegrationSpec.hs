@@ -121,6 +121,7 @@ copyTree toCopy src dst =
         createDirectoryIfMissing True $ takeDirectory dstfp
         createSymbolicLink srcfp dstfp `catch` \(_ :: IOException) ->
             copyFile srcfp dstfp -- for Windows
+        --copyFile srcfp dstfp -- XXX otherwise canonicalized paths point back to original
 
 toCopyRoot :: FilePath -> Bool
 toCopyRoot srcfp = any (`isSuffixOf` srcfp)

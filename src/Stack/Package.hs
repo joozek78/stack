@@ -529,6 +529,7 @@ executableFiles exe = do
             (dirs ++ [dir])
             (map Left (otherModules build))
             haskellModuleExts
+    --XXX why is this (and others) not using resolveFilesAndDeps? (see https://github.com/commercialhaskell/stack/commit/9a2bde432fc6d9b42258b5d9dd2a8e6ee5e42d3b#commitcomment-12724037)
     mainFiles <-
         resolveFiles (dirs ++ [dir]) [Right (modulePath exe)] haskellModuleExts
     cfiles <- buildCSources build
@@ -686,6 +687,7 @@ resolveFilesAndDeps
     -> [Text] -- ^ Extentions.
     -> m (Set ModuleName,Set (Path Abs File),Set (Path Abs File))
 resolveFilesAndDeps component dirs names0 exts = do
+    --liftIO $ putStrLn $ "XXX resolveFilesAndDeps " ++ show (component, dirs, names0, exts)
     (moduleFiles,thFiles,foundModules) <- loop names0 S.empty
     warnUnlisted component (lefts names0) foundModules
     return (foundModules, moduleFiles, S.fromList thFiles)
@@ -693,6 +695,7 @@ resolveFilesAndDeps component dirs names0 exts = do
     loop [] doneModules = return (S.empty, [], doneModules)
     loop names doneModules0 = do
         resolvedFiles <- resolveFiles dirs names exts
+        --liftIO $ putStrLn $ "XXX resolveFiles result=" ++ show resolvedFiles
         pairs <- mapM (getDependencies component) resolvedFiles
         let doneModules' = S.union doneModules0 (S.fromList (lefts names))
             moduleDeps = S.unions (map fst pairs)
@@ -736,6 +739,7 @@ getDependencies
     => Maybe String -> Path Abs File -> m (Set ModuleName, [Path Abs File])
 getDependencies component resolvedFile = do
     dir <- asks (parent . fst)
+    --liftIO $ putStrLn $ "XXX getDependencies dir=" ++ show dir
     dumpHIDir <- getDumpHIDir
     case stripDir dir resolvedFile of
         Nothing -> return (S.empty, [])
@@ -746,8 +750,12 @@ getDependencies component resolvedFile = do
                         ".dump-hi"
             dumpHIExists <- liftIO $ doesFileExist dumpHIPath
             if dumpHIExists
-                then parseDumpHI dumpHIPath
-                else return (S.empty, [])
+                then do
+                    --liftIO $ putStrLn ("XXX found " ++ dumpHIPath)
+                    parseDumpHI dumpHIPath
+                else do
+                    --liftIO $ putStrLn ("XXX DIDN'T FIND " ++ dumpHIPath)
+                    return (S.empty, [])
   where getDumpHIDir = do
             bld <- asks snd
             return $ maybe bld (bld </>) (getBuildComponentDir component)
@@ -807,6 +815,8 @@ findCandidate
 findCandidate dirs exts name = do
     pkg <- asks fst >>= parsePackageNameFromFilePath
     candidates <- liftIO makeNameCandidates
+    --liftIO $ putStrLn $ "XXX findCandidate " ++ show (dirs,exts,name)
+    --liftIO $ putStrLn $ "XXX makeNameCandidates=" ++ show candidates
     case candidates of
         [candidate] -> return (Just candidate)
         [] -> do
@@ -837,6 +847,15 @@ findCandidate dirs exts name = do
                                    dir
                                    (Cabal.toFilePath mn ++ "." ++ ext)))
                     (map T.unpack exts)
+    --resolveFileXXX :: (MonadIO m, MonadThrow m) => Path Abs Dir -> FilePath -> m (Path Abs File)
+    --resolveFileXXX x y = do
+    --    --XXX right way to replace resolveFile here?
+    --    --XXX also replace other uses of resolve(File|Dir)(Maybe)?
+    --    yp <- parseRelFile y
+    --    exists <- fileExists yp
+    --    if exists
+    --        then return (x </> yp)
+    --        else error "XXX file doesn't exist"
 
 -- | Warn the user that multiple candidates are available for an
 -- entry, but that we picked one anyway and continued.
