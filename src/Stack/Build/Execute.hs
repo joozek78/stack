@@ -264,9 +264,9 @@ executePlan menv bopts baseConfigOpts locals sourceMap plan = do
                 , " not found in PATH environment variable"
                 ]
 
-        platformXXX <- asks getPlatformXXX
+        platform <- asks getPlatform
         let ext =
-                case platformXXX of
+                case platform of
                     Platform _ Windows -> ".exe"
                     _ -> ""
 
@@ -296,7 +296,7 @@ executePlan menv bopts baseConfigOpts locals sourceMap plan = do
                         , T.pack destFile
                         ]
 
-                    liftIO $ case platformXXX of
+                    liftIO $ case platform of
                         Platform _ Windows | FP.equalFilePath destFile currExe ->
                             windowsRenameCopy (toFilePath file) destFile
                         _ -> D.copyFile (toFilePath file) destFile
@@ -778,7 +778,7 @@ singleTest topts lptb ac ee task =
             hpcDir <- hpcDirFromDir pkgDir
             when needHpc (createTree hpcDir)
             let exeExtension =
-                    case configPlatformXXX $ getConfig bconfig of
+                    case configPlatform $ getConfig bconfig of
                         Platform _ Windows -> ".exe"
                         _ -> ""
 

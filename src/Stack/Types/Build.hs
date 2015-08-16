@@ -125,6 +125,7 @@ instance Show StackBuildException where
                ", the package id couldn't be found " <> "(via ghc-pkg describe " <>
                packageNameString name <> "). This shouldn't happen, " <>
                "please report as a bug")
+    --XXX update error message for when variant doesn't exist.
     show (GHCVersionMismatch mactual (expected, earch) check mstack resolution) = concat
                 [ case mactual of
                     Nothing -> "No GHC found, expected "

@@ -19,10 +19,10 @@ data Env config =
 
 instance HasStackRoot config => HasStackRoot (Env config) where
     getStackRoot = getStackRoot . envConfig
-instance HasPlatformXXX config => HasPlatformXXX (Env config) where
-    getPlatformXXX = getPlatformXXX . envConfig
-instance HasGhcVariant config => HasGhcVariant (Env config) where
-    getGhcVariant = getGhcVariant . envConfig
+instance HasPlatform config => HasPlatform (Env config) where
+    getPlatform = getPlatform . envConfig
+instance HasGHCVariant config => HasGHCVariant (Env config) where
+    getGHCVariant = getGHCVariant . envConfig
 instance HasConfig config => HasConfig (Env config) where
     getConfig = getConfig . envConfig
 instance HasBuildConfig config => HasBuildConfig (Env config) where

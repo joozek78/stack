@@ -107,8 +107,8 @@ data Ctx = Ctx
     }
 
 instance HasStackRoot Ctx
-instance HasPlatformXXX Ctx
-instance HasGhcVariant Ctx
+instance HasPlatform Ctx
+instance HasGHCVariant Ctx
 instance HasConfig Ctx
 instance HasBuildConfig Ctx where
     getBuildConfig = getBuildConfig . getEnvConfig

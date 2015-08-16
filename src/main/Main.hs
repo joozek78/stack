@@ -727,7 +727,7 @@ uploadCmd args go = do
     when (not (null invalid)) $ error $
         "stack upload expects a list sdist tarballs or cabal directories.  Can't find " ++
         show invalid
-    let getUploader :: (HasStackRoot config, HasPlatformXXX config, HasConfig config) => StackT config IO Upload.Uploader
+    let getUploader :: (HasStackRoot config, HasPlatform config, HasConfig config) => StackT config IO Upload.Uploader
         getUploader = do
             config <- asks getConfig
             manager <- asks envManager

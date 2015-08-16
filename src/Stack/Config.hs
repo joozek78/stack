@@ -91,11 +91,11 @@ defaultStackGlobalConfig :: Maybe (Path Abs File)
 defaultStackGlobalConfig = parseAbsFile "/etc/stack/config"
 
 --XXX MOVE/DOC/RENAME
-data PlatformGhcVariant = PlatformGhcVariant Platform GhcVariant
-instance HasPlatformXXX PlatformGhcVariant where
-    getPlatformXXX (PlatformGhcVariant platform _) = platform
-instance HasGhcVariant PlatformGhcVariant where
-    getGhcVariant (PlatformGhcVariant _ ghcVariant) = ghcVariant
+data PlatformGHCVariant = PlatformGHCVariant Platform GHCVariant
+instance HasPlatform PlatformGHCVariant where
+    getPlatform (PlatformGHCVariant platform _) = platform
+instance HasGHCVariant PlatformGHCVariant where
+    getGHCVariant (PlatformGHCVariant _ ghcVariant) = ghcVariant
 
 -- Interprets ConfigMonoid options.
 configFromConfigMonoid
@@ -138,7 +138,7 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
               $ configMonoidArch >>= Distribution.Text.simpleParse
          os = fromMaybe defOS
             $ configMonoidOS >>= Distribution.Text.simpleParse
-         configPlatformXXX = Platform arch os
+         configPlatform = Platform arch os
 
          configRequireStackVersion = simplifyVersionRange configMonoidRequireStackVersion
 
@@ -148,20 +148,20 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
 
          configCompilerCheck = fromMaybe MatchMinor configMonoidCompilerCheck
 
-     origEnv <- getEnvOverride configPlatformXXX
+     origEnv <- getEnvOverride configPlatform
      let configEnvOverride _ = return origEnv
 
      --XXX TEST: allow customization, set appropriate default
-     --XXX could this move to BuildConfig or something?
+     --XXX could this move to BuildConfig or something? (also needed by configLocalPrograms just below)  or cache it?
      --XXX check for `windowsintegersimple` OS, print warning/error?
-     configGhcVariant <- case parseGhcVariant <$> configMonoidGhcVariant of
+     configGHCVariant <- case parseGHCVariant <$> configMonoidGHCVariant of
          Just ghcVariant -> return ghcVariant
-         Nothing -> getDefaultGhcVariant configEnvOverride os
+         Nothing -> getDefaultGHCVariant origEnv os
 
-     platform <- runReaderT platformRelDir (PlatformGhcVariant configPlatformXXX configGhcVariant)
+     platform <- runReaderT platformRelDir (PlatformGHCVariant configPlatform configGHCVariant)
 
      configLocalPrograms <-
-        case configPlatformXXX of
+        case configPlatform of
             Platform _ Windows -> do
                 progsDir <- getWindowsProgsDir configStackRoot origEnv
                 return $ progsDir </> $(mkRelDir stackProgName) </> platform
@@ -190,19 +190,16 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
      return Config {..}
   where
     --XXX move?  maybe shouldn't be a 'where'?
-    getDefaultGhcVariant getConfigEnvOverride Linux = do
-        --XXX can this be cached?
-        menv <- liftIO (getConfigEnvOverride minimalEnvSettings)
+    getDefaultGHCVariant menv Linux = do
         executablePath <- liftIO getExecutablePath
         elddOut <- tryProcessStdout Nothing menv "ldd" [executablePath]
         return $ case elddOut of
-            Left _ -> GhcDefault
+            Left _ -> StandardGHC
             Right lddOut ->
                 if hasLineWithFirstWord "libgmp.so.3" lddOut
-                    then GhcGmp4
-                    else GhcDefault
-    --XXX maybe rename GhcDefault to GhcStandard?
-    getDefaultGhcVariant _ _ = return GhcDefault
+                    then Gmp4
+                    else StandardGHC
+    getDefaultGHCVariant _ _ = return StandardGHC
     hasLineWithFirstWord w =
         elem (Just w) . map (headMay . T.words) . T.lines . decodeUtf8With lenientDecode
 
@@ -226,8 +223,8 @@ instance HasConfig MiniConfig where
 instance HasStackRoot MiniConfig
 instance HasHttpManager MiniConfig where
     getHttpManager (MiniConfig man _) = man
-instance HasPlatformXXX MiniConfig
-instance HasGhcVariant MiniConfig
+instance HasPlatform MiniConfig
+instance HasGHCVariant MiniConfig
 
 -- | Load the configuration, using current directory, environment variables,
 -- and defaults as necessary.

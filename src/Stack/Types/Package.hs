@@ -91,7 +91,7 @@ data Package =
 -- | Files that the package depends on, relative to package directory.
 -- Argument is the location of the .cabal file
 newtype GetPackageOpts = GetPackageOpts
-    { getPackageOpts :: forall env m. (MonadIO m,HasEnvConfig env, HasPlatformXXX env, MonadThrow m, MonadReader env m)
+    { getPackageOpts :: forall env m. (MonadIO m,HasEnvConfig env, HasPlatform env, MonadThrow m, MonadReader env m)
                      => SourceMap
                      -> [PackageName]
                      -> Path Abs File
@@ -108,7 +108,7 @@ data CabalFileType
 -- | Files that the package depends on, relative to package directory.
 -- Argument is the location of the .cabal file
 newtype GetPackageFiles = GetPackageFiles
-    { getPackageFiles :: forall m env. (MonadIO m, MonadLogger m, MonadThrow m, MonadCatch m, MonadReader env m, HasPlatformXXX env, HasEnvConfig env)
+    { getPackageFiles :: forall m env. (MonadIO m, MonadLogger m, MonadThrow m, MonadCatch m, MonadReader env m, HasPlatform env, HasEnvConfig env)
                       => Path Abs File
                       -> m (Map NamedComponent (Set ModuleName)
                            ,Map NamedComponent (Set (Path Abs File))
@@ -131,7 +131,7 @@ data PackageConfig =
                 ,packageConfigEnableBenchmarks :: !Bool   -- ^ Are benchmarks enabled?
                 ,packageConfigFlags :: !(Map FlagName Bool)   -- ^ Package config flags.
                 ,packageConfigGhcVersion :: !Version      -- ^ GHC version
-                ,packageConfigPlatformXXX :: !Platform       -- ^ host platform
+                ,packageConfigPlatform :: !Platform       -- ^ host platform
                 }
  deriving (Show,Typeable)
 

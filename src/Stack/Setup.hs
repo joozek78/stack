@@ -98,7 +98,7 @@ data SetupOpts = SetupOpts
     -- ^ Message shown to user for how to resolve the missing GHC
     }
     deriving Show
-data SetupException = UnsupportedSetupCombo OS Arch
+data SetupException = UnsupportedSetupCombo OS Arch GHCVariant
                     | MissingDependencies [String]
                     | UnknownGHCVersion Text CompilerVersion (Set Version)
                     | UnknownOSKey Text
@@ -106,9 +106,11 @@ data SetupException = UnsupportedSetupCombo OS Arch
     deriving Typeable
 instance Exception SetupException
 instance Show SetupException where
-    show (UnsupportedSetupCombo os arch) = concat
+    show (UnsupportedSetupCombo os arch ghcVariant) = concat
         [ "I don't know how to install GHC for "
-        , show (os, arch)
+        , case ghcVariant of
+              StandardGHC -> show (os, arch) --XXX TEST
+              _ -> show (os, arch, ghcVariant)
         , ", please install manually"
         ]
     show (MissingDependencies tools) =
@@ -138,7 +140,7 @@ setupEnv :: (MonadIO m, MonadMask m, MonadLogger m, MonadReader env m, HasBuildC
          -> m EnvConfig
 setupEnv mResolveMissingGHC = do
     bconfig <- asks getBuildConfig
-    let platformXXX = getPlatformXXX bconfig
+    let platform = getPlatform bconfig
         sopts = SetupOpts
             { soptsInstallIfMissing = configInstallGHC $ bcConfig bconfig
             , soptsUseSystem = configSystemGHC $ bcConfig bconfig
@@ -167,7 +169,7 @@ setupEnv mResolveMissingGHC = do
                        ++ maybe [] return mpath
                  in Map.insert "PATH" path x
 
-    menv <- mkEnvOverride platformXXX env
+    menv <- mkEnvOverride platform env
     ghcVer <- getGhcVersion menv
     cabalVer <- getCabalPkgVer menv
     packages <- mapM
@@ -208,7 +210,7 @@ setupEnv mResolveMissingGHC = do
             case Map.lookup es m of
                 Just eo -> return eo
                 Nothing -> do
-                    eo <- mkEnvOverride platformXXX
+                    eo <- mkEnvOverride platform
                         $ Map.insert "PATH" (if esIncludeLocals es then localsPath else depsPath)
                         $ (if esIncludeGhcPackagePath es
                                 then Map.insert "GHC_PACKAGE_PATH" (mkGPP (esIncludeLocals es))
@@ -281,7 +283,7 @@ ensureGHC sopts = do
             then getSystemGHC menv0
             else return Nothing
 
-    Platform expectedArch _ <- asks getPlatformXXX
+    Platform expectedArch _ <- asks getPlatform
 
     let needLocal = case msystem of
             Nothing -> True
@@ -317,7 +319,7 @@ ensureGHC sopts = do
                         si <- getSetupInfo'
                         downloadAndInstallGHC si (soptsWantedCompiler sopts) (soptsCompilerCheck sopts)
                     | otherwise -> do
-                        Platform arch _ <- asks getPlatformXXX
+                        Platform arch _ <- asks getPlatform
                         throwM $ GHCVersionMismatch
                             msystem
                             (soptsWantedCompiler sopts, arch)
@@ -328,7 +330,7 @@ ensureGHC sopts = do
                                 $ soptsResolveMissingGHC sopts)
 
             -- Install git on windows, if necessary
-            mgitIdent <- case configPlatformXXX config of
+            mgitIdent <- case configPlatform config of
                 Platform _ Windows | not (soptsSkipMsys sopts) ->
                     case getInstalledTool installed $(mkPackageName "git") (const True) of
                         Just ident -> return (Just ident)
@@ -356,7 +358,7 @@ ensureGHC sopts = do
                     path0 = Map.lookup "PATH" m0
                     path = augmentPath paths path0
                     m = Map.insert "PATH" path m0
-                mkEnvOverride (configPlatformXXX config) (removeHaskellEnvVars m)
+                mkEnvOverride (configPlatform config) (removeHaskellEnvVars m)
 
     when (soptsUpgradeCabal sopts) $ do
         unless needLocal $ do
@@ -431,7 +433,6 @@ upgradeCabal menv = do
             $logInfo "New Cabal library installed"
 
 -- | Get the major version of the system GHC, if available
---XXX do we need to ensure the GhcVariant is checked?
 getSystemGHC :: (MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => EnvOverride -> m (Maybe (Version, Arch))
 getSystemGHC menv = do
     exists <- doesExecutableExist menv "ghc"
@@ -548,7 +549,7 @@ binDirs :: (MonadReader env m, HasConfig env, MonadThrow m, MonadLogger m)
 binDirs ident = do
     config <- asks getConfig
     dir <- installDir ident
-    case (configPlatformXXX config, packageNameString $ packageIdentifierName ident) of
+    case (configPlatform config, packageNameString $ packageIdentifierName ident) of
         (Platform _ Windows, "ghc") -> return
             [ dir </> $(mkRelDir "bin")
             , dir </> $(mkRelDir "mingw") </> $(mkRelDir "bin")
@@ -613,7 +614,7 @@ downloadAndInstallGHC si wanted versionCheck = do
         case mpair of
             Just pair -> return pair
             Nothing -> throwM $ UnknownGHCVersion osKey wanted (Map.keysSet pairs)
-    platform <- asks $ configPlatformXXX . getConfig
+    platform <- asks $ configPlatform . getConfig
     let installer =
             case platform of
                 Platform _ Windows -> installGHCWindows
@@ -623,34 +624,34 @@ downloadAndInstallGHC si wanted versionCheck = do
 getOSKey :: (MonadReader env m, MonadThrow m, HasConfig env, MonadLogger m, MonadIO m, MonadCatch m, MonadBaseControl IO m)
          => m Text
 getOSKey = do
-    platformXXX <- asks getPlatformXXX
-    ghcVariant <- asks getGhcVariant
-    case (platformXXX, ghcVariant) of
+    platform <- asks getPlatform
+    ghcVariant <- asks getGHCVariant
+    case (platform, ghcVariant) of
         --XXX TEST
-        (Platform I386 Linux, GhcGmp4) -> return "linux32-gmp4"
+        (Platform I386 Linux, Gmp4) -> return "linux32-gmp4"
         --XXX TEST
-        (Platform X86_64 Linux, GhcGmp4) -> return "linux64-gmp4"
+        (Platform X86_64 Linux, Gmp4) -> return "linux64-gmp4"
         --XXX TEST
-        (Platform I386 Linux, GhcDefault) -> return "linux32"
+        (Platform I386 Linux, StandardGHC) -> return "linux32"
         --XXX TEST
-        (Platform X86_64 Linux, GhcDefault) -> return "linux64"
-        (Platform I386 OSX, GhcDefault) -> return "macosx"
-        (Platform X86_64 OSX, GhcDefault) -> return "macosx"
-        (Platform I386 FreeBSD, GhcDefault) -> return "freebsd32"
-        (Platform X86_64 FreeBSD, GhcDefault) -> return "freebsd64"
-        (Platform I386 OpenBSD, GhcDefault) -> return "openbsd32"
-        (Platform X86_64 OpenBSD, GhcDefault) -> return "openbsd64"
+        (Platform X86_64 Linux, StandardGHC) -> return "linux64"
+        (Platform I386 OSX, StandardGHC) -> return "macosx"
+        (Platform X86_64 OSX, StandardGHC) -> return "macosx"
+        (Platform I386 FreeBSD, StandardGHC) -> return "freebsd32"
+        (Platform X86_64 FreeBSD, StandardGHC) -> return "freebsd64"
+        (Platform I386 OpenBSD, StandardGHC) -> return "openbsd32"
+        (Platform X86_64 OpenBSD, StandardGHC) -> return "openbsd64"
         --XXX TEST
-        (Platform I386 Windows, GhcIntegerSimple) -> return "windowsintegersimple32"
+        (Platform I386 Windows, IntegerSimple) -> return "windowsintegersimple32"
         --XXX TEST
-        (Platform X86_64 Windows, GhcIntegerSimple) -> return "windowsintegersimple64"
+        (Platform X86_64 Windows, IntegerSimple) -> return "windowsintegersimple64"
         --XXX TEST
-        (Platform I386 Windows, GhcDefault) -> return "windows32"
+        (Platform I386 Windows, StandardGHC) -> return "windows32"
         --XXX TEST
-        (Platform X86_64 Windows, GhcDefault) -> return "windows64"
+        (Platform X86_64 Windows, StandardGHC) -> return "windows64"
 
         --XXX in config, detect when selected OS is "windowsintegersimple" and fail or warn
-        (Platform arch os, _) -> throwM $ UnsupportedSetupCombo os arch
+        (Platform arch os, _) -> throwM $ UnsupportedSetupCombo os arch ghcVariant
 
 downloadFromInfo :: (MonadIO m, MonadMask m, MonadLogger m, MonadReader env m, HasConfig env, HasHttpManager env, MonadBaseControl IO m)
              => DownloadInfo
@@ -692,9 +693,9 @@ installGHCPosix :: (MonadIO m, MonadMask m, MonadLogger m, MonadReader env m, Ha
                 -> PackageIdentifier
                 -> m ()
 installGHCPosix _ archiveFile archiveType destDir ident = do
-    platformXXX <- asks getPlatformXXX
+    platform <- asks getPlatform
     menv0 <- getMinimalEnvOverride
-    menv <- mkEnvOverride platformXXX (removeHaskellEnvVars (unEnvOverride menv0))
+    menv <- mkEnvOverride platform (removeHaskellEnvVars (unEnvOverride menv0))
     $logDebug $ "menv = " <> T.pack (show (unEnvOverride menv))
     zipTool' <-
         case archiveType of

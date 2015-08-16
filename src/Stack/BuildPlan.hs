@@ -255,7 +255,7 @@ addDeps :: (MonadIO m, MonadLogger m, MonadReader env m, HasHttpManager env, Mon
         -> m (Map PackageName MiniPackageInfo, Set PackageIdentifier)
 addDeps allowMissing ghcVersion toCalc = do
     menv <- getMinimalEnvOverride
-    platform <- asks $ configPlatformXXX . getConfig
+    platform <- asks $ configPlatform . getConfig
     (resolvedMap, missingIdents) <-
         if allowMissing
             then do
@@ -281,7 +281,7 @@ addDeps allowMissing ghcVersion toCalc = do
                     , packageConfigEnableBenchmarks = False
                     , packageConfigFlags = flags
                     , packageConfigGhcVersion = ghcVersion
-                    , packageConfigPlatformXXX = platform
+                    , packageConfigPlatform = platform
                     }
                 name = packageIdentifierName ident
                 pd = resolvePackageDescription packageConfig gpd
@@ -507,7 +507,7 @@ checkBuildPlan :: (MonadLogger m, MonadThrow m, MonadIO m, MonadReader env m, Ha
                -> GenericPackageDescription
                -> m (Either DepErrors (Map PackageName (Map FlagName Bool)))
 checkBuildPlan locals mbp gpd = do
-    platform <- asks (configPlatformXXX . getConfig)
+    platform <- asks (configPlatform . getConfig)
     return $ loop platform flagOptions
   where
     packages = Map.union locals $ fmap mpiVersion $ mbpPackages mbp
@@ -527,7 +527,7 @@ checkBuildPlan locals mbp gpd = do
             , packageConfigEnableBenchmarks = True
             , packageConfigFlags = flags
             , packageConfigGhcVersion = ghcVersion
-            , packageConfigPlatformXXX = platform
+            , packageConfigPlatform = platform
             }
 
     ghcVersion = mbpGhcVersion mbp
