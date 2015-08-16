@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -56,6 +57,30 @@ import           Stack.Types.PackageName
 import           Stack.Types.Version
 import           System.Process.Read (EnvOverride)
 
+--XXX check XXX comments in first attempt
+
+--XXX MOVE/DOC/RENAME
+data GhcVariant
+    = GhcDefault --XXX rename to "standard"
+    | GhcGmp4
+    | GhcIntegerSimple
+    | GhcOther String
+    deriving (Eq,Ord,Show)
+
+renderGhcVariant :: GhcVariant -> String
+renderGhcVariant GhcDefault = "standard"
+renderGhcVariant GhcGmp4 = "gmp4"
+renderGhcVariant GhcIntegerSimple = "integersimple"
+renderGhcVariant (GhcOther other) = other
+
+--XXX MOVE/DOC/RENAME
+parseGhcVariant :: String -> GhcVariant
+parseGhcVariant s =
+    if |  s == "standard" -> GhcDefault
+       |  s == "gmp4" -> GhcGmp4
+       |  s == "integersimple" -> GhcIntegerSimple
+       |  otherwise -> GhcOther s
+
 -- | The top-level Stackage configuration.
 data Config =
   Config {configStackRoot           :: !(Path Abs Dir)
@@ -70,8 +95,10 @@ data Config =
          ,configHideTHLoading       :: !Bool
          -- ^ Hide the Template Haskell "Loading package ..." messages from the
          -- console
-         ,configPlatform            :: !Platform
+         ,configPlatformXXX         :: !Platform
          -- ^ The platform we're building for, used in many directory names
+         ,configGhcVariant          :: !GhcVariant
+         -- ^ XXX DOC
          ,configLatestSnapshotUrl   :: !Text
          -- ^ URL for a JSON file containing information on the latest
          -- snapshots available.
@@ -272,7 +299,8 @@ data EnvConfig = EnvConfig
 instance HasBuildConfig EnvConfig where
     getBuildConfig = envConfigBuildConfig
 instance HasConfig EnvConfig
-instance HasPlatform EnvConfig
+instance HasPlatformXXX EnvConfig
+instance HasGhcVariant EnvConfig
 instance HasStackRoot EnvConfig
 class HasBuildConfig r => HasEnvConfig r where
     getEnvConfig :: r -> EnvConfig
@@ -440,22 +468,32 @@ class HasStackRoot env where
     {-# INLINE getStackRoot #-}
 
 -- | Class for environment values which have a Platform
-class HasPlatform env where
-    getPlatform :: env -> Platform
-    default getPlatform :: HasConfig env => env -> Platform
-    getPlatform = configPlatform . getConfig
-    {-# INLINE getPlatform #-}
-instance HasPlatform Platform where
-    getPlatform = id
+class HasPlatformXXX env where
+    getPlatformXXX :: env -> Platform
+    default getPlatformXXX :: HasConfig env => env -> Platform
+    getPlatformXXX = configPlatformXXX . getConfig
+    {-# INLINE getPlatformXXX #-}
+instance HasPlatformXXX Platform where
+    getPlatformXXX = id
+
+-- | Class for environment values which have a GhcVariant
+class HasGhcVariant env where
+    getGhcVariant :: env -> GhcVariant
+    default getGhcVariant :: HasConfig env => env -> GhcVariant
+    getGhcVariant = configGhcVariant . getConfig
+    {-# INLINE getGhcVariant #-}
+instance HasGhcVariant GhcVariant where
+    getGhcVariant = id
 
 -- | Class for environment values that can provide a 'Config'.
-class (HasStackRoot env, HasPlatform env) => HasConfig env where
+class (HasStackRoot env, HasPlatformXXX env, HasGhcVariant env) => HasConfig env where
     getConfig :: env -> Config
     default getConfig :: HasBuildConfig env => env -> Config
     getConfig = bcConfig . getBuildConfig
     {-# INLINE getConfig #-}
 instance HasStackRoot Config
-instance HasPlatform Config
+instance HasPlatformXXX Config
+instance HasGhcVariant Config
 instance HasConfig Config where
     getConfig = id
     {-# INLINE getConfig #-}
@@ -464,7 +502,8 @@ instance HasConfig Config where
 class HasConfig env => HasBuildConfig env where
     getBuildConfig :: env -> BuildConfig
 instance HasStackRoot BuildConfig
-instance HasPlatform BuildConfig
+instance HasPlatformXXX BuildConfig
+instance HasGhcVariant BuildConfig
 instance HasConfig BuildConfig
 instance HasBuildConfig BuildConfig where
     getBuildConfig = id
@@ -500,6 +539,8 @@ data ConfigMonoid =
     -- ^ Used for overriding the platform
     ,configMonoidArch                :: !(Maybe String)
     -- ^ Used for overriding the platform
+    ,configMonoidGhcVariant          :: !(Maybe String)
+    -- ^ Used for overriding the GHC variant
     ,configMonoidJobs                :: !(Maybe Int)
     -- ^ See: 'configJobs'
     ,configMonoidExtraIncludeDirs    :: !(Set Text)
@@ -533,6 +574,7 @@ instance Monoid ConfigMonoid where
     , configMonoidRequireStackVersion = anyVersion
     , configMonoidOS = Nothing
     , configMonoidArch = Nothing
+    , configMonoidGhcVariant = Nothing
     , configMonoidJobs = Nothing
     , configMonoidExtraIncludeDirs = Set.empty
     , configMonoidExtraLibDirs = Set.empty
@@ -557,6 +599,7 @@ instance Monoid ConfigMonoid where
                                                                (configMonoidRequireStackVersion r)
     , configMonoidOS = configMonoidOS l <|> configMonoidOS r
     , configMonoidArch = configMonoidArch l <|> configMonoidArch r
+    , configMonoidGhcVariant = configMonoidGhcVariant l <|> configMonoidGhcVariant r
     , configMonoidJobs = configMonoidJobs l <|> configMonoidJobs r
     , configMonoidExtraIncludeDirs = Set.union (configMonoidExtraIncludeDirs l) (configMonoidExtraIncludeDirs r)
     , configMonoidExtraLibDirs = Set.union (configMonoidExtraLibDirs l) (configMonoidExtraLibDirs r)
@@ -590,6 +633,8 @@ parseConfigMonoidJSON obj = do
                                            ..!= VersionRangeJSON anyVersion
     configMonoidOS <- obj ..:? "os"
     configMonoidArch <- obj ..:? "arch"
+    --XXX right name?
+    configMonoidGhcVariant <- obj ..:? "ghc-variant"
     configMonoidJobs <- obj ..:? "jobs"
     configMonoidExtraIncludeDirs <- obj ..:? "extra-include-dirs" ..!= Set.empty
     configMonoidExtraLibDirs <- obj ..:? "extra-lib-dirs" ..!= Set.empty
@@ -730,8 +775,18 @@ configInstalledCache :: (HasBuildConfig env, MonadReader env m) => m (Path Abs F
 configInstalledCache = liftM (</> $(mkRelFile "installed-cache.bin")) configProjectWorkDir
 
 -- | Relative directory for the platform identifier
-platformRelDir :: (MonadReader env m, HasPlatform env, MonadThrow m) => m (Path Rel Dir)
-platformRelDir = asks getPlatform >>= parseRelDir . Distribution.Text.display
+platformRelDir
+    :: (MonadReader env m, HasPlatformXXX env, HasGhcVariant env, MonadThrow m)
+    => m (Path Rel Dir)
+platformRelDir = do
+    platform <- asks getPlatformXXX
+    ghcVariant <- asks getGhcVariant
+    --XXX move 'case ghcVaraint' (and confirm right names)
+    parseRelDir
+        (Distribution.Text.display platform ++
+         (case ghcVariant of
+              GhcDefault -> ""
+              _ -> "-" ++ renderGhcVariant ghcVariant))
 
 -- | Path to .shake files.
 configShakeFilesDir :: (MonadReader env m, HasBuildConfig env) => m (Path Abs Dir)
@@ -742,6 +797,7 @@ configLocalUnpackDir :: (MonadReader env m, HasBuildConfig env) => m (Path Abs D
 configLocalUnpackDir = liftM (</> $(mkRelDir "unpacked")) configProjectWorkDir
 
 -- | Directory containing snapshots
+--XXX why doesn't this need HasPlatform, and could I make HasGhcVariant not needed too?
 snapshotsDir :: (MonadReader env m, HasConfig env, MonadThrow m) => m (Path Abs Dir)
 snapshotsDir = do
     config <- asks getConfig
@@ -787,7 +843,7 @@ flagCacheLocal = do
     return $ root </> $(mkRelDir "flag-cache")
 
 -- | Where to store mini build plan caches
-configMiniBuildPlanCache :: (MonadThrow m, MonadReader env m, HasStackRoot env, HasPlatform env)
+configMiniBuildPlanCache :: (MonadThrow m, MonadReader env m, HasConfig env)
                          => SnapName
                          -> m (Path Abs File)
 configMiniBuildPlanCache name = do
@@ -826,11 +882,15 @@ extraBinDirs = do
 getMinimalEnvOverride :: (MonadReader env m, HasConfig env, MonadIO m) => m EnvOverride
 getMinimalEnvOverride = do
     config <- asks getConfig
-    liftIO $ configEnvOverride config EnvSettings
-                    { esIncludeLocals = False
-                    , esIncludeGhcPackagePath = False
-                    , esStackExe = False
-                    }
+    liftIO $ configEnvOverride config minimalEnvSettings
+
+minimalEnvSettings :: EnvSettings
+minimalEnvSettings =
+    EnvSettings
+    { esIncludeLocals = False
+    , esIncludeGhcPackagePath = False
+    , esStackExe = False
+    }
 
 data ProjectAndConfigMonoid
   = ProjectAndConfigMonoid !Project !ConfigMonoid

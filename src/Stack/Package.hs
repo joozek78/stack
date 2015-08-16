@@ -193,7 +193,7 @@ resolvePackage packageConfig gpkg =
 -- options which apply generally to the package, not one specific
 -- component.
 generatePkgDescOpts
-    :: (HasEnvConfig env, HasPlatform env, MonadThrow m, MonadReader env m, MonadIO m)
+    :: (HasEnvConfig env, HasPlatformXXX env, MonadThrow m, MonadReader env m, MonadIO m)
     => SourceMap
     -> [PackageName]
     -> Path Abs File
@@ -581,7 +581,7 @@ resolvePackageDescription packageConfig (GenericPackageDescription desc defaultF
 
         rc = mkResolveConditions
                 (packageConfigGhcVersion packageConfig)
-                (packageConfigPlatform packageConfig)
+                (packageConfigPlatformXXX packageConfig)
                 flags
 
         updateLibDeps lib deps =
@@ -623,7 +623,7 @@ mkResolveConditions :: Version -- ^ GHC version
 mkResolveConditions ghcVersion (Platform arch os) flags = ResolveConditions
     { rcFlags = flags
     , rcGhcVersion = ghcVersion
-    , rcOS = if isWindows os then Windows else os
+    , rcOS = os
     , rcArch = arch
     }
 
@@ -654,6 +654,7 @@ resolveConditions rc addDeps (CondNode lib deps cs) = basic <> children
                   case v of
                     OS os -> os == rcOS rc
                     Arch arch -> arch == rcArch rc
+                    --XXX is a GhcVariant relevant here?
                     Flag flag ->
                         case M.lookup (fromCabalFlagName flag) (rcFlags rc) of
                             Just x -> x

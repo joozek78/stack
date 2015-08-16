@@ -61,7 +61,7 @@ haskellPreprocessorExts :: [Text]
 haskellPreprocessorExts = ["gc", "chs", "hsc", "x", "y", "ly", "cpphs"]
 
 -- | The filename used for completed build indicators.
-builtFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+builtFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                  => Path Abs Dir
                  -> m (Path Abs File)
 builtFileFromDir fp = do
@@ -69,7 +69,7 @@ builtFileFromDir fp = do
   return (dist </> $(mkRelFile "stack.gen"))
 
 -- | The filename used for completed configure indicators.
-configuredFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+configuredFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                       => Path Abs Dir
                       -> m (Path Abs File)
 configuredFileFromDir fp = do
@@ -77,14 +77,14 @@ configuredFileFromDir fp = do
   return (dist </> $(mkRelFile "setup-config"))
 
 -- | The filename used for completed build indicators.
-builtConfigFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+builtConfigFileFromDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                        => Path Abs Dir
                        -> m (Path Abs File)
 builtConfigFileFromDir fp =
     liftM (fp </>) builtConfigRelativeFile
 
 -- | Relative location of completed build indicators.
-builtConfigRelativeFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+builtConfigRelativeFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                         => m (Path Rel File)
 builtConfigRelativeFile = do
   dist <- distRelativeDir
@@ -117,7 +117,7 @@ objectInterfaceDir :: BuildConfig -> Path Abs Dir
 objectInterfaceDir bconfig = bcWorkDir bconfig </> $(mkRelDir "odir/")
 
 -- | The filename used for dirtiness check of source files.
-buildCacheFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+buildCacheFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                => Path Abs Dir      -- ^ Package directory.
                -> m (Path Abs File)
 buildCacheFile dir = do
@@ -126,7 +126,7 @@ buildCacheFile dir = do
         (distDirFromDir dir)
 
 -- | The filename used to mark tests as having succeeded
-testSuccessFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+testSuccessFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                 => Path Abs Dir -- ^ Package directory
                 -> m (Path Abs File)
 testSuccessFile dir =
@@ -135,7 +135,7 @@ testSuccessFile dir =
         (distDirFromDir dir)
 
 -- | The filename used to mark tests as having built
-testBuiltFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+testBuiltFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
               => Path Abs Dir -- ^ Package directory
               -> m (Path Abs File)
 testBuiltFile dir =
@@ -144,7 +144,7 @@ testBuiltFile dir =
         (distDirFromDir dir)
 
 -- | The filename used to mark benchmarks as having built
-benchBuiltFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+benchBuiltFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                => Path Abs Dir -- ^ Package directory
                -> m (Path Abs File)
 benchBuiltFile dir =
@@ -153,7 +153,7 @@ benchBuiltFile dir =
         (distDirFromDir dir)
 
 -- | The filename used for dirtiness check of config.
-configCacheFile :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+configCacheFile :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                 => Path Abs Dir      -- ^ Package directory.
                 -> m (Path Abs File)
 configCacheFile dir = do
@@ -162,7 +162,7 @@ configCacheFile dir = do
         (distDirFromDir dir)
 
 -- | The filename used for modification check of .cabal
-configCabalMod :: (MonadThrow m, MonadReader env m, HasPlatform env,HasEnvConfig env)
+configCabalMod :: (MonadThrow m, MonadReader env m, HasPlatformXXX env,HasEnvConfig env)
                => Path Abs Dir      -- ^ Package directory.
                -> m (Path Abs File)
 configCabalMod dir = do
@@ -172,20 +172,20 @@ configCabalMod dir = do
 
 -- | Directory for HPC work.
 hpcDirFromDir
-    :: (MonadThrow m, MonadReader env m, HasPlatform env, HasEnvConfig env)
+    :: (MonadThrow m, MonadReader env m, HasPlatformXXX env, HasEnvConfig env)
     => Path Abs Dir  -- ^ Package directory.
     -> m (Path Abs Dir)
 hpcDirFromDir fp =
     liftM (fp </>) hpcRelativeDir
 
 -- | Relative location of directory for HPC work.
-hpcRelativeDir :: (MonadThrow m, MonadReader env m, HasPlatform env, HasEnvConfig env)
+hpcRelativeDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env, HasEnvConfig env)
                => m (Path Rel Dir)
 hpcRelativeDir =
     liftM (</> $(mkRelDir "hpc")) distRelativeDir
 
 -- | Package's build artifacts directory.
-distDirFromDir :: (MonadThrow m, MonadReader env m, HasPlatform env, HasEnvConfig env)
+distDirFromDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env, HasEnvConfig env)
                => Path Abs Dir
                -> m (Path Abs Dir)
 distDirFromDir fp =
@@ -196,7 +196,7 @@ templatesDir :: Config -> Path Abs Dir
 templatesDir config = configStackRoot config </> $(mkRelDir "templates")
 
 -- | Relative location of build artifacts.
-distRelativeDir :: (MonadThrow m, MonadReader env m, HasPlatform env, HasEnvConfig env)
+distRelativeDir :: (MonadThrow m, MonadReader env m, HasPlatformXXX env, HasEnvConfig env)
                 => m (Path Rel Dir)
 distRelativeDir = do
     cabalPkgVer <- asks (envConfigCabalVersion . getEnvConfig)

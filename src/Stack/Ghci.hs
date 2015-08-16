@@ -237,7 +237,7 @@ makeGhciPkgInfo sourceMap locals name cabalfp components = do
             , packageConfigEnableBenchmarks = True
             , packageConfigFlags = localFlags mempty bconfig name
             , packageConfigGhcVersion = envConfigGhcVersion econfig
-            , packageConfigPlatform = configPlatform (getConfig bconfig)
+            , packageConfigPlatformXXX = configPlatformXXX (getConfig bconfig)
             }
     pkg <- readPackage config cabalfp
     (componentsOpts,generalOpts) <-

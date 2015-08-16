@@ -45,7 +45,8 @@ import qualified Data.Map as Map
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text as T
-import           Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import           Data.Text.Encoding (encodeUtf8, decodeUtf8, decodeUtf8With)
+import           Data.Text.Encoding.Error (lenientDecode)
 import qualified Data.Yaml as Yaml
 import           Distribution.System (OS (..), Platform (..), buildPlatform)
 import qualified Distribution.Text
@@ -57,6 +58,7 @@ import           Options.Applicative (Parser, strOption, long, help)
 import           Path
 import           Path.IO
 import qualified Paths_stack as Meta
+import           Safe (headMay)
 import           Stack.BuildPlan
 import           Stack.Constants
 import qualified Stack.Docker as Docker
@@ -67,7 +69,7 @@ import           Stack.Types.Internal
 import           System.Directory (getAppUserDataDirectory, createDirectoryIfMissing, canonicalizePath)
 import           System.Environment
 import           System.IO
-import           System.Process.Read (getEnvOverride, EnvOverride, unEnvOverride, readInNull)
+import           System.Process.Read (getEnvOverride, EnvOverride, unEnvOverride, readInNull, tryProcessStdout)
 
 -- | Get the latest snapshot resolver available.
 getLatestResolver
@@ -88,9 +90,16 @@ getLatestResolver = do
 defaultStackGlobalConfig :: Maybe (Path Abs File)
 defaultStackGlobalConfig = parseAbsFile "/etc/stack/config"
 
+--XXX MOVE/DOC/RENAME
+data PlatformGhcVariant = PlatformGhcVariant Platform GhcVariant
+instance HasPlatformXXX PlatformGhcVariant where
+    getPlatformXXX (PlatformGhcVariant platform _) = platform
+instance HasGhcVariant PlatformGhcVariant where
+    getGhcVariant (PlatformGhcVariant _ ghcVariant) = ghcVariant
+
 -- Interprets ConfigMonoid options.
 configFromConfigMonoid
-    :: (MonadLogger m, MonadIO m, MonadCatch m, MonadReader env m, HasHttpManager env)
+    :: (MonadBaseControl IO m, MonadLogger m, MonadIO m, MonadCatch m, MonadReader env m, HasHttpManager env)
     => Path Abs Dir -- ^ stack root, e.g. ~/.stack
     -> Maybe Project
     -> ConfigMonoid
@@ -129,7 +138,7 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
               $ configMonoidArch >>= Distribution.Text.simpleParse
          os = fromMaybe defOS
             $ configMonoidOS >>= Distribution.Text.simpleParse
-         configPlatform = Platform arch os
+         configPlatformXXX = Platform arch os
 
          configRequireStackVersion = simplifyVersionRange configMonoidRequireStackVersion
 
@@ -139,13 +148,20 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
 
          configCompilerCheck = fromMaybe MatchMinor configMonoidCompilerCheck
 
-     origEnv <- getEnvOverride configPlatform
+     origEnv <- getEnvOverride configPlatformXXX
      let configEnvOverride _ = return origEnv
 
-     platform <- runReaderT platformRelDir configPlatform
+     --XXX TEST: allow customization, set appropriate default
+     --XXX could this move to BuildConfig or something?
+     --XXX check for `windowsintegersimple` OS, print warning/error?
+     configGhcVariant <- case parseGhcVariant <$> configMonoidGhcVariant of
+         Just ghcVariant -> return ghcVariant
+         Nothing -> getDefaultGhcVariant configEnvOverride os
+
+     platform <- runReaderT platformRelDir (PlatformGhcVariant configPlatformXXX configGhcVariant)
 
      configLocalPrograms <-
-        case configPlatform of
+        case configPlatformXXX of
             Platform _ Windows -> do
                 progsDir <- getWindowsProgsDir configStackRoot origEnv
                 return $ progsDir </> $(mkRelDir stackProgName) </> platform
@@ -172,6 +188,23 @@ configFromConfigMonoid configStackRoot mproject configMonoid@ConfigMonoid{..} = 
          configScmInit = configMonoidScmInit
 
      return Config {..}
+  where
+    --XXX move?  maybe shouldn't be a 'where'?
+    getDefaultGhcVariant getConfigEnvOverride Linux = do
+        --XXX can this be cached?
+        menv <- liftIO (getConfigEnvOverride minimalEnvSettings)
+        executablePath <- liftIO getExecutablePath
+        elddOut <- tryProcessStdout Nothing menv "ldd" [executablePath]
+        return $ case elddOut of
+            Left _ -> GhcDefault
+            Right lddOut ->
+                if hasLineWithFirstWord "libgmp.so.3" lddOut
+                    then GhcGmp4
+                    else GhcDefault
+    --XXX maybe rename GhcDefault to GhcStandard?
+    getDefaultGhcVariant _ _ = return GhcDefault
+    hasLineWithFirstWord w =
+        elem (Just w) . map (headMay . T.words) . T.lines . decodeUtf8With lenientDecode
 
 -- | Get the directory on Windows where we should install extra programs. For
 -- more information, see discussion at:
@@ -193,7 +226,8 @@ instance HasConfig MiniConfig where
 instance HasStackRoot MiniConfig
 instance HasHttpManager MiniConfig where
     getHttpManager (MiniConfig man _) = man
-instance HasPlatform MiniConfig
+instance HasPlatformXXX MiniConfig
+instance HasGhcVariant MiniConfig
 
 -- | Load the configuration, using current directory, environment variables,
 -- and defaults as necessary.

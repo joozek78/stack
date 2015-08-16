@@ -151,7 +151,7 @@ withLoadPackage menv inner = do
         , packageConfigEnableBenchmarks = False
         , packageConfigFlags = flags
         , packageConfigGhcVersion = envConfigGhcVersion econfig
-        , packageConfigPlatform = configPlatform (getConfig econfig)
+        , packageConfigPlatformXXX = configPlatformXXX (getConfig econfig)
         }
 
 -- | Reset the build (remove Shake database and .gen files).

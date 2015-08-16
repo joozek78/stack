@@ -171,7 +171,7 @@ runContainerAndExit modConfig
                     after =
   do config <- fmap modConfig (asks getConfig)
      let docker = configDocker config
-     envOverride <- getEnvOverride (configPlatform config)
+     envOverride <- getEnvOverride (configPlatformXXX config)
      checkDockerVersion envOverride
      uidOut <- readProcessStdout Nothing envOverride "id" ["-u"]
      gidOut <- readProcessStdout Nothing envOverride "id" ["-g"]
@@ -300,7 +300,7 @@ cleanup :: M env m
         => CleanupOpts -> m ()
 cleanup opts =
   do config <- asks getConfig
-     envOverride <- getEnvOverride (configPlatform config)
+     envOverride <- getEnvOverride (configPlatformXXX config)
      checkDockerVersion envOverride
      let runDocker = readDockerProcess envOverride
      imagesOut <- runDocker ["images","--no-trunc","-f","dangling=false"]
@@ -552,7 +552,7 @@ pull :: M env m => m ()
 pull =
   do config <- asks getConfig
      let docker = configDocker config
-     envOverride <- getEnvOverride (configPlatform config)
+     envOverride <- getEnvOverride (configPlatformXXX config)
      checkDockerVersion envOverride
      pullImage envOverride docker (dockerImage docker)
 
